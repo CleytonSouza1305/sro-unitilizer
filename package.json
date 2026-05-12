@@ -20,6 +20,7 @@
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   },
+  "type": "module",
   "name": "sro-unitilizer",
   "version": "1.0.0",
   "main": "index.js",
