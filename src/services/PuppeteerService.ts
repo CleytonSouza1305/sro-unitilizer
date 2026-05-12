@@ -53,7 +53,7 @@ class PuppeteerService {
       }
 
       this.isLogged = true;
-      console.log("✅ Conectado e logado com sucesso");
+      return this.isLogged
     } finally {
       await page.close(); 
     }
@@ -68,8 +68,8 @@ class PuppeteerService {
       
       const linkSelector = 'a[href*="expedicaoagencia/index.php"]';
       await page.evaluate(async (seletor) => {
-        const link = document.querySelector(seletor);
-        if (link) await page.click(linkSelector)
+        const link = document.querySelector(seletor) as HTMLAnchorElement | null
+        if (link) link.click()
       }, linkSelector);
 
       await page.waitForSelector("#btn-objetos", { visible: true });
