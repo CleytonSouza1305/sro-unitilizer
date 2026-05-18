@@ -23,7 +23,7 @@ class PuppeteerService {
   }
 
   async connectAndLogin(url: string, user: string, pass: string) {
-    if (this.isLogged) return;
+    if (this.isLogged) return this.isLogged;
 
     const browser = await this.getBrowser();
     const page = await browser.newPage();
