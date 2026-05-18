@@ -2,8 +2,8 @@ import puppeteer, { Browser } from 'puppeteer';
 
 interface Unitizer {
   number: string,
-  unitizer: string,
-  unit: string,
+  unitilizer: string,
+  destination: string,
   date: string,
   objects: { data: string[], quantity: number }
 }
@@ -85,10 +85,10 @@ class PuppeteerService {
           const splitedData = elData[3].innerText.split(" ");
 
           const number = elData[0]?.innerText || "";
-          const unit = elData[1]?.innerText.includes(":")
+          const destination = elData[1]?.innerText.includes(":")
             ? elData[1].innerText.split(":")[1].trim()
             : "";
-          const unitizer = elData[2]?.innerText.includes(":")
+          const unitilizer = elData[2]?.innerText.includes(":")
             ? elData[2].innerText.split(":")[1].trim()
             : "";
           const date =
@@ -108,8 +108,8 @@ class PuppeteerService {
 
           unitizerData.push({
             number,
-            unitizer,
-            unit,
+            unitilizer,
+            destination,
             date,
             objects: { data: objects, quantity: objects.length },
           });
