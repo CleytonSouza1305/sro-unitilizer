@@ -20,6 +20,11 @@ model User {
   password String @db.VarChar(255) 
   role UserRole @default(USER)
 
+  created_by_id   String? @db.VarChar(255)
+  created_by_user User?   @relation("UserCreator", fields: [created_by_id], references: [id])
+
+  created_users   User[]  @relation("UserCreator")
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
