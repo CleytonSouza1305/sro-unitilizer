@@ -6,3 +6,8 @@ export const UserRequestSchema = z.object({
   password: z.string().min(2).max(100), 
   role: z.enum(['OWNER', 'ADMIN', 'MANAGER', 'USER']).optional()
 })
+
+export const UserRequestLoginSchema = z.object({
+  email: z.email().min(2).max(100),
+  password: z.string().min(2).max(100)
+})
