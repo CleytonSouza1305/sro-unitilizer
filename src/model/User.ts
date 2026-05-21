@@ -1,7 +1,7 @@
 import { prisma } from "../database"
 import { UserRole } from "../generated/prisma/enums"
 
-interface UserInterface {
+export interface UserInterface {
   username: string
   email: string,
   password: string,
@@ -13,6 +13,17 @@ export default class User {
   }
 
   static createUser = async (data: UserInterface) => {
-    console.log(data)
+    return data
+  }
+
+  static findById = async (id: string) => {
+    return await prisma.user.findUnique({ 
+      where: 
+      { id }, 
+      include: { 
+        created_by_user: true, 
+        created_users: true 
+      }
+    })
   }
 }
