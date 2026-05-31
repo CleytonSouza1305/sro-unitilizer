@@ -1,24 +1,37 @@
-import puppeteer, { Browser } from 'puppeteer';
+import puppeteer, { Browser } from "puppeteer";
 
-interface Unitizer {
-  number: string,
-  unitilizer: string,
-  destination: string,
-  date: string,
-  objects: { data: string[], quantity: number }
+export interface Unitizer {
+  number: string;
+  unitilizer: string;
+  destination: string;
+  date: string;
+  objects: { data: string[]; quantity: number };
 }
 
 class PuppeteerService {
   private browser: Browser | null = null;
-  private isLogged = false; 
+  private isLogged = false;
 
   private async getBrowser(): Promise<Browser> {
-    if (!this.browser) {
+    if (!this.browser || !this.browser.isConnected()) {
+      console.log("[PUPPETEER] Iniciando/Reiniciando navegador...");
+
       this.browser = await puppeteer.launch({
-        headless: false, 
-        args: ['--no-sandbox']
+        headless: false,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+        ],
+      });
+
+      this.browser.on("disconnected", () => {
+        console.warn("[PUPPETEER] Conexão perdida. Limpando instâncias...");
+        this.browser = null;
+        this.isLogged = false;
       });
     }
+
     return this.browser;
   }
 
@@ -31,7 +44,7 @@ class PuppeteerService {
     try {
       await page.goto(url);
       await page.waitForSelector("a.logo", { visible: true });
-      
+
       await Promise.all([
         page.click("a.logo"),
         page.waitForNavigation({ waitUntil: "networkidle2" }),
@@ -53,9 +66,9 @@ class PuppeteerService {
       }
 
       this.isLogged = true;
-      return this.isLogged
+      return this.isLogged;
     } finally {
-      await page.close(); 
+      await page.close();
     }
   }
 
@@ -65,11 +78,13 @@ class PuppeteerService {
 
     try {
       await page.goto(url);
-      
+
       const linkSelector = 'a[href*="expedicaoagencia/index.php"]';
       await page.evaluate(async (seletor) => {
-        const link = document.querySelector(seletor) as HTMLAnchorElement | null
-        if (link) link.click()
+        const link = document.querySelector(
+          seletor,
+        ) as HTMLAnchorElement | null;
+        if (link) link.click();
       }, linkSelector);
 
       await page.waitForSelector("#btn-objetos", { visible: true });
@@ -77,10 +92,10 @@ class PuppeteerService {
       await page.click("#btn-objetos");
       const finalData = await page.evaluate(() => {
         const cards = document.querySelectorAll(".card");
-        const unitizerData: Unitizer[] = []
+        const unitizerData: Unitizer[] = [];
 
         cards.forEach((el) => {
-          const elData = Array.from(el.children) as HTMLElement[]
+          const elData = Array.from(el.children) as HTMLElement[];
 
           const splitedData = elData[3].innerText.split(" ");
 
@@ -118,20 +133,55 @@ class PuppeteerService {
         return unitizerData;
       });
 
-      return finalData
+      return finalData;
     } finally {
-      await page.close(); 
+      await page.close();
     }
   }
 
-  // 4. Operação específica: Ver Perfil
-  async checkProfile() {
+  async closeUnitilizer(url: string, unitilizer: string) {
     const browser = await this.getBrowser();
     const page = await browser.newPage();
 
+    page.on("console", (msg) => {
+      console.log(`[LOG DO NAVEGADOR]:`, msg.text());
+    });
+
     try {
-      await page.goto('URL_DO_PERFIL');
-      // Lógica para ver perfil
+      await page.goto(url, { waitUntil: "networkidle2" });
+      await page.waitForSelector("#matricula", { visible: true });
+
+      await page.type("#matricula", unitilizer);
+      await page.keyboard.press("Enter");
+
+      const seletorMensagem = "#sub-mensagem_princial";
+
+      await page.waitForSelector(seletorMensagem, { visible: true });
+      const statusTexto = await page.$eval(
+        seletorMensagem,
+        (el) => el.textContent?.trim() || "",
+      );
+
+      const mensagemSucessoPrimeiraLeitura = `Unitizador ${unitilizer} aberto, leia novamente para fechar`;
+
+      if (
+        statusTexto.includes(mensagemSucessoPrimeiraLeitura) ||
+        statusTexto.includes("leia novamente para fechar")
+      ) {
+        await page.click("#matricula");
+        await page.keyboard.down("Control");
+        await page.keyboard.press("A");
+        await page.keyboard.up("Control");
+        await page.keyboard.press("Backspace");
+
+        await page.type("#matricula", unitilizer);
+        await page.keyboard.press("Enter");
+
+        return {
+          success: true,
+          unitilizer
+        };
+      }
     } finally {
       await page.close();
     }
