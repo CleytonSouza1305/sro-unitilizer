@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginController, registerController } from "../controllers/user-controller";
+import { loginController, me, registerController } from "../controllers/user-controller";
 import { authorizationByToken, authorizationPermission } from "../middleware/authorization-middleware";
 
 const authRouter = Router()
@@ -14,4 +14,9 @@ authRouter.post(
   registerController     
 );
 
+authRouter.get(
+  '/me', 
+  authorizationByToken,
+  me
+)
 export default authRouter
