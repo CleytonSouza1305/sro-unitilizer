@@ -65,5 +65,12 @@ const loginController: Handler = async (req, res, next) => {
   }
 }
 
+const me: Handler = async (req, res, next) => {
+  try {
+    res.json(req.user)
+  } catch (e) {
+    next(e)
+  }
+}
 
-export { registerController, loginController }
+export { registerController, loginController, me }
