@@ -114,10 +114,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
         continue;
       }
 
-      if (
-        +isValidUnitilizer.number === 17 ||
-        isValidUnitilizer.destination.toLowerCase().includes("cajamar")
-      ) {
+      if (isValidUnitilizer.destination.toLowerCase().includes("cajamar")) {
         const date = new Date();
         date.setHours(0, 0, 0, 0);
 
@@ -125,26 +122,12 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
         const [day, month, year] = dateString.split("/");
 
         const unitilizerDate = new Date(+year, +month - 1, +day);
-        if (date > unitilizerDate) {
-          const wasClosed = await puppeteerService.closeUnitilizer(
-            url,
-            isValidUnitilizer.unitilizer,
-          );
-
-          if (wasClosed?.success) {
-            results.closeds.push(isValidUnitilizer);
-            continue;
-          } else {
-            results.error.push({
-              unit: currentUnit,
-              reason: "O serviço do robô não retornou confirmação de sucesso.",
-            });
-          }
-        } else {
+        if (date <= unitilizerDate) {
           results.error.push({
             unit: currentUnit,
             reason: `Bloqueado: Não é permitido fechar "${isValidUnitilizer.destination}" no mesmo dia da abertura.`,
           });
+          continue; 
         }
 
         continue;
