@@ -178,4 +178,9 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
   }
 };
 
-export { getUnitilizer, closeUnitilizer };
+const allObjects: RequestHandler = async (req, res, next) => {
+  const objects = await Unitilizer.totalObjects()
+  res.json(objects)
+}
+
+export { getUnitilizer, closeUnitilizer, allObjects };
