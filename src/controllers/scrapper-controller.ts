@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import { RequestHandler } from "express";
 import { puppeteerService, Unitizer } from "../services/PuppeteerService";
 import { HttpError } from "../error/HttpError";
+import Unitilizer from "../model/Unitilizer";
 config();
 
 const url = process.env.SCRAPE_URL;
@@ -106,6 +107,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
       const isValidUnitilizer = data.find(
         (el) => el.unitilizer === currentUnit,
       );
+
       if (!isValidUnitilizer) {
         results.error.push({
           unit: currentUnit,
@@ -127,7 +129,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
             unit: currentUnit,
             reason: `Bloqueado: Não é permitido fechar "${isValidUnitilizer.destination}" no mesmo dia da abertura.`,
           });
-          continue; 
+          continue;
         }
 
         continue;
@@ -147,6 +149,27 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
           reason: "O serviço do robô não retornou confirmação de sucesso.",
         });
       }
+    }
+
+    if (!req.user) {
+      throw new HttpError(
+        "UNAUTHORIZED",
+        401,
+        "Usuário não autenticado para realizar esta operação.",
+      );
+    }
+
+    try {
+      for (let i = 0; i < results.closeds.length; i++) {
+        const currentData = results.closeds[i];
+        await Unitilizer.closeUnit(currentData, req.user.id);
+      }
+    } catch (error) {
+      throw new HttpError(
+        "DATABASE_SAVE_FAILED",
+        500,
+        "Ocorreu um erro ao salvar as unidades fechadas no banco de dados.",
+      );
     }
 
     res.json({ results });
