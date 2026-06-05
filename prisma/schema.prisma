@@ -25,6 +25,8 @@ model User {
 
   created_users   User[]  @relation("UserCreator")
 
+  unitilizer_closeds Unitilizer[]
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
@@ -34,4 +36,29 @@ enum UserRole {
   ADMIN
   MANAGER
   USER
+}
+
+model Unitilizer {
+  id String @id @default(uuid())
+  number Int 
+  unitilizer String @db.VarChar(20) @unique
+  destination String @db.VarChar(100)
+  date String @db.VarChar(100)
+  objects Objects[]
+
+  closed_by_userId String
+  closed_by_user User @relation(fields: [closed_by_userId], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Objects {
+  id String @id @default(uuid())
+
+  unitilizer_id String
+  unitilizer Unitilizer @relation(fields: [unitilizer_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
