@@ -1,18 +1,16 @@
 import { prisma } from "../database";
 
 interface CloseUnitInput {
-  number: number;
+  number: string;
   unitilizer: string;
   destination: string;
   date: string;
-  closedByUserId: string;
-  objects: { data: string[]; quantity: number };       
+  objects: { data: string[]; quantity: number };
 }
 
 export default class Unitilizer {
   static closeUnit = async (data: CloseUnitInput, userId: string) => {
-
-    const unitilizer = await prisma.unitilizer.create({ 
+    const unitilizer = await prisma.unitilizer.create({
       data: {
         date: data.date,
         destination: data.destination,
@@ -22,13 +20,17 @@ export default class Unitilizer {
         objects: {
           createMany: {
             data: data.objects.data.map((l) => ({
-              label: l
-            }))
-          }
-        }
-      }
-    })
+              label: l,
+            })),
+          },
+        },
+      },
+    });
 
-    return unitilizer
-  }
+    return unitilizer;
+  };
+
+  static totalObjects = async () => {
+    return await prisma.objects.count();
+  };
 }
