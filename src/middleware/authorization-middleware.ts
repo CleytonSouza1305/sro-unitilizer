@@ -1,12 +1,21 @@
 import { Handler } from "express";
 import { HttpError } from "../error/HttpError";
-import User, { UserInterface } from "../model/User";
+import User from "../model/User";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import { UserRole } from "../generated/prisma/enums";
+
+interface UserCompletInterface {
+  id: string
+  username: string;
+  email: string;
+  password: string;
+  role?: UserRole;
+}
 
 declare global {
   namespace Express {
     interface Request {
-      user?: UserInterface | JwtPayload
+      user?: UserCompletInterface | JwtPayload
       isAuthorized?: boolean;
     }
   }
