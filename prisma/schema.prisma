@@ -58,6 +58,7 @@ model Objects {
 
   unitilizer_id String
   unitilizer Unitilizer @relation(fields: [unitilizer_id], references: [id])
+  label String @db.VarChar(100)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
