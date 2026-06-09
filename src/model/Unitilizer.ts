@@ -13,7 +13,7 @@ export default class Unitilizer {
     const actualDate = new Date();
 
     const day = String(actualDate.getDate()).padStart(2, "0");
-    const month = String(actualDate.getMonth() + 1).padStart(2, "0"); 
+    const month = String(actualDate.getMonth() + 1).padStart(2, "0");
     const year = actualDate.getFullYear();
 
     const hours = String(actualDate.getHours()).padStart(2, "0");
@@ -44,19 +44,19 @@ export default class Unitilizer {
   };
 
   static totalObjectsToday = async () => {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
 
-  return await prisma.objects.count({
-    where: {
-      created_at: {
-        gte: startOfToday,
-        lte: endOfToday,  
+    return await prisma.objects.count({
+      where: {
+        created_at: {
+          gte: startOfToday,
+          lte: endOfToday,
+        },
       },
-    },
-  });
-};
+    });
+  };
 }
