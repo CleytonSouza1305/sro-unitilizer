@@ -95,7 +95,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
 
     const results: {
       closeds: Unitizer[];
-      error: { unit: string; reason: string }[];
+      error: { unitilizer: string; reason: string }[];
     } = {
       closeds: [],
       error: [],
@@ -110,7 +110,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
 
       if (!isValidUnitilizer) {
         results.error.push({
-          unit: currentUnit,
+          unitilizer: currentUnit,
           reason: "Não encontrado na base de destino",
         });
         continue;
@@ -126,7 +126,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
         const unitilizerDate = new Date(+year, +month - 1, +day);
         if (date <= unitilizerDate) {
           results.error.push({
-            unit: currentUnit,
+            unitilizer: currentUnit,
             reason: `Bloqueado: Não é permitido fechar "${isValidUnitilizer.destination}" no mesmo dia da abertura.`,
           });
           continue;
@@ -145,7 +145,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
         continue;
       } else {
         results.error.push({
-          unit: currentUnit,
+          unitilizer: currentUnit,
           reason: "O serviço do robô não retornou confirmação de sucesso.",
         });
       }
@@ -164,7 +164,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
         const currentData = results.closeds[i];
         await Unitilizer.closeUnit(currentData, req.user.id);
       }
-    } catch (error) {
+    } catch (e) {
       throw new HttpError(
         "DATABASE_SAVE_FAILED",
         500,
@@ -179,7 +179,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
 };
 
 const allObjects: RequestHandler = async (req, res, next) => {
-  const objects = await Unitilizer.totalObjects()
+  const objects = await Unitilizer.totalObjectsToday()
   res.json(objects)
 }
 
