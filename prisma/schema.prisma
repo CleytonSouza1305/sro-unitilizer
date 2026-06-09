@@ -43,8 +43,10 @@ model Unitilizer {
   number Int 
   unitilizer String @db.VarChar(20) @unique
   destination String @db.VarChar(100)
-  date String @db.VarChar(100)
   objects Objects[]
+
+  open_at String @db.VarChar(50)
+  closed_at String @db.VarChar(50)
 
   closed_by_userId String
   closed_by_user User @relation(fields: [closed_by_userId], references: [id])
