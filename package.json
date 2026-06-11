@@ -10,17 +10,17 @@
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.20.0",
     "puppeteer": "^24.43.1",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
+    "zod": "^4.4.3",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.7.0",
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
     "prisma": "^7.8.0",
     "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.3"
+    "tsx": "^4.21.0"
   },
   "type": "module",
   "name": "sro-unitilizer",
@@ -29,7 +29,7 @@
   "scripts": {
     "dev": "tsx watch ./src/server.ts",
     "build": "tsc",
-    "start": "node ./build/server.js"
+    "start": "node ./src/build/server.js"
   },
   "keywords": [],
   "author": "",
