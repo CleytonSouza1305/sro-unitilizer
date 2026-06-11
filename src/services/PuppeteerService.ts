@@ -17,7 +17,6 @@ class PuppeteerService {
       console.log("[PUPPETEER] Iniciando/Reiniciando navegador...");
 
       this.browser = await puppeteer.launch({
-        headless: false,
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
