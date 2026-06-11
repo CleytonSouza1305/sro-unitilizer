@@ -1,8 +1,8 @@
 import { config } from "dotenv";
 import { RequestHandler } from "express";
-import { puppeteerService, Unitizer } from "../services/PuppeteerService";
-import { HttpError } from "../error/HttpError";
-import Unitilizer from "../model/Unitilizer";
+import { puppeteerService, Unitizer } from "../services/PuppeteerService.js";
+import { HttpError } from "../error/HttpError.js";
+import Unitilizer from "../model/Unitilizer.js";
 config();
 
 const url = process.env.SCRAPE_URL;
