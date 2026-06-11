@@ -29,7 +29,7 @@
   "scripts": {
     "dev": "tsx watch ./src/server.ts",
     "build": "tsc",
-    "start": "node ./src/build/server.js"
+    "start": "node ./build/src/server.js"
   },
   "keywords": [],
   "author": "",
