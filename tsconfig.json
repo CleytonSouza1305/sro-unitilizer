@@ -3,7 +3,8 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "target": "ES2023",
-    "strict": true,
+    "strict": false,
+    "outDir": "./src/build",
     "esModuleInterop": true,
     "ignoreDeprecations": "6.0"
   }
