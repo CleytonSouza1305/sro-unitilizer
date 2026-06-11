@@ -1,5 +1,5 @@
 import { prisma } from "../database";
-import { UserRole } from "../generated/prisma/enums";
+import { UserRole } from "../generated/prisma/enums.js";
 
 export interface UserInterface {
   username: string;

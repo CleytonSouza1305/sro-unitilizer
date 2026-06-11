@@ -1,7 +1,7 @@
 import { Handler } from "express"
-import { UserRequestLoginSchema, UserRequestSchema } from "../schemas/UserRequest"
+import { UserRequestLoginSchema, UserRequestSchema } from "../schemas/UserRequest.js"
 import User from "../model/User"
-import { HttpError } from "../error/HttpError"
+import { HttpError } from "../error/HttpError.js"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 

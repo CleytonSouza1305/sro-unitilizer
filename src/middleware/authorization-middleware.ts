@@ -1,8 +1,8 @@
 import { Handler } from "express";
-import { HttpError } from "../error/HttpError";
-import User from "../model/User";
+import { HttpError } from "../error/HttpError.js";
+import User from "../model/User.js";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { UserRole } from "../generated/prisma/enums";
+import { UserRole } from "../generated/prisma/enums.js";
 
 interface UserCompletInterface {
   id: string

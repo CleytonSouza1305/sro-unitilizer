@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { loginController, me, registerController } from "../controllers/user-controller";
-import { authorizationByToken, authorizationPermission } from "../middleware/authorization-middleware";
+import { loginController, me, registerController } from "../controllers/user-controller.js";
+import { authorizationByToken, authorizationPermission } from "../middleware/authorization-middleware.js";
 
 const authRouter = Router()
 

@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { allObjects, closeUnitilizer, getUnitilizer } from '../controllers/scrapper-controller'
-import { authorizationByToken } from '../middleware/authorization-middleware'
+import { allObjects, closeUnitilizer, getUnitilizer } from '../controllers/scrapper-controller.js'
+import { authorizationByToken } from '../middleware/authorization-middleware.js'
 
 const puppeteerRouter = Router()
 
