@@ -38,36 +38,68 @@ class PuppeteerService {
     if (this.isLogged) return this.isLogged;
 
     const browser = await this.getBrowser();
-    const page = await browser.newPage();
+    const maxTentativas = 3;
 
-    try {
-      await page.goto(url);
-      await page.waitForSelector("a.logo", { visible: true });
+    const delay = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
 
-      await Promise.all([
-        page.click("a.logo"),
-        page.waitForNavigation({ waitUntil: "networkidle2" }),
-      ]);
+    for (let t = 1; t <= maxTentativas; t++) {
+      const page = await browser.newPage();
 
-      const ids = await page.evaluate(() => {
-        const inputs = document.querySelectorAll(".form-control");
-        return Array.from(inputs).map((el) => el.id);
-      });
+      try {
+        if (t > 1) {
+          const waitTIme = (t + 1) * 5000;
+          console.warn(
+            `[Aviso] Conexão resetada anteriormente. Aguardando ${waitTIme / 1000}s antes da tentativa ${t}...`,
+          );
+          await delay(waitTIme);
+        }
 
-      if (ids.length >= 2) {
-        await page.type(`#${ids[0]}`, user);
-        await page.type(`#${ids[1]}`, pass);
+        console.log(
+          `[SRO] Tentando conectar e logar (Tentativa ${t}/${maxTentativas})...`,
+        );
+
+        await page.goto(url, { waitUntil: "networkidle2", timeout: 45000 });
+        await page.waitForSelector("a.logo", { visible: true, timeout: 20000 });
 
         await Promise.all([
-          page.click("button.primario"),
-          page.waitForNavigation({ waitUntil: "networkidle2" }).catch(() => {}),
+          page.click("a.logo"),
+          page.waitForNavigation({ waitUntil: "networkidle2", timeout: 45000 }),
         ]);
-      }
 
-      this.isLogged = true;
-      return this.isLogged;
-    } finally {
-      await page.close();
+        const ids = await page.evaluate(() => {
+          const inputs = document.querySelectorAll(".form-control");
+          return Array.from(inputs).map((el) => el.id);
+        });
+
+        if (ids.length >= 2) {
+          await page.type(`#${ids[0]}`, user);
+          await page.type(`#${ids[1]}`, pass);
+
+          await Promise.all([
+            page.click("button.primario"),
+            page
+              .waitForNavigation({ waitUntil: "networkidle2", timeout: 45000 })
+              .catch(() => {}),
+          ]);
+        }
+
+        this.isLogged = true;
+        console.log("[SRO] Logado com sucesso!");
+
+        await page.close();
+        return this.isLogged;
+      } catch (error: any) {
+        console.error(`[Erro] Falha na tentativa ${t}:`, error.message);
+
+        await page.close();
+
+        if (t === maxTentativas) {
+          throw new Error(
+            `Falha definitiva ao conectar no SRO após ${maxTentativas} tentativas. Motivo: ${error.message}`,
+          );
+        }
+      }
     }
   }
 
@@ -178,7 +210,7 @@ class PuppeteerService {
 
         return {
           success: true,
-          unitilizer
+          unitilizer,
         };
       }
     } finally {
