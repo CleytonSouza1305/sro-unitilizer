@@ -179,8 +179,38 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
 };
 
 const allObjects: RequestHandler = async (req, res, next) => {
-  const objects = await Unitilizer.totalObjectsToday()
-  res.json(objects)
-}
+  const objects = await Unitilizer.totalObjectsToday();
+  res.json(objects);
+};
 
-export { getUnitilizer, closeUnitilizer, allObjects };
+const getAvaliableUnit: RequestHandler = async (req, res, next) => {
+  if (!url) {
+    throw new HttpError("MISSING_URL", 400, "A URL de destino é obrigatória.");
+  }
+
+  const user = process.env.PUPPETEER_USER;
+  const pass = process.env.PUPPETEER_PASS;
+
+  if (!user || !pass) {
+    throw new HttpError(
+      "INTERNAL_CONFIG_ERROR",
+      500,
+      "Credenciais do serviço não configuradas no ambiente.",
+    );
+  }
+
+  const isConnected = await puppeteerService.connectAndLogin(url, user, pass);
+
+  if (!isConnected) {
+    throw new HttpError(
+      "PUPPETEER_AUTH_FAILED",
+      401,
+      "Não foi possível autenticar no serviço de expedição.",
+    );
+  }
+
+  const data = await puppeteerService.searchUnitilizer(url);
+  res.json(data);
+};
+
+export { getUnitilizer, closeUnitilizer, allObjects, getAvaliableUnit };
