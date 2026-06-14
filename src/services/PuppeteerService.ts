@@ -10,7 +10,7 @@ export interface Unitizer {
 
 export interface UnitizerRotulos {
   direction: string;
-  position: number;
+  position: string | number;
   quantity: number;
   format: string;
   category: string;
@@ -261,7 +261,7 @@ class PuppeteerService {
           const category = elData[2]?.textContent?.trim() || "";
           const format = elData[3]?.textContent?.trim() || "";
 
-          const position = Number(elData[5]?.textContent) || 0;
+          const position = elData[5]?.textContent || 0;
           const quantity = Number(elData[8]?.textContent) || 0;
 
           unitizerDataRotulos.push({
