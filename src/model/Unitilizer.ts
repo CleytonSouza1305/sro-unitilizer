@@ -22,22 +22,28 @@ export default class Unitilizer {
 
     const formattedDate = `${day}/${month}/${year} - ${hours}:${minutes}:${seconds}`;
 
-    const unitilizer = await prisma.unitilizer.create({
-      data: {
-        open_at: data.date,
-        closed_at: formattedDate,
-        destination: data.destination,
-        number: +data.number,
-        unitilizer: data.unitilizer,
-        closed_by_userId: userId,
-        objects: {
-          createMany: {
-            data: data.objects.data.map((l) => ({
-              label: l,
-            })),
-          },
+    const unitilizer = await prisma.$transaction(async (tx) => {
+      const newUnitilizer = await tx.unitilizer.create({
+        data: {
+          open_at: data.date,
+          closed_at: formattedDate,
+          destination: data.destination,
+          number: +data.number,
+          unitilizer: data.unitilizer,
+          closed_by_userId: userId,
         },
-      },
+      });
+
+      if (data.objects?.data?.length > 0) {
+        await tx.objects.createMany({
+          data: data.objects.data.map((l) => ({
+            label: l,
+            unitilizer_id: newUnitilizer.id
+          })),
+        });
+      }
+
+      return newUnitilizer;
     });
 
     return unitilizer;
