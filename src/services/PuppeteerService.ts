@@ -8,6 +8,14 @@ export interface Unitizer {
   objects: { data: string[]; quantity: number };
 }
 
+export interface UnitizerRotulos {
+  direction: string;
+  position: number;
+  quantity: number;
+  format: string;
+  category: string;
+}
+
 class PuppeteerService {
   private browser: Browser | null = null;
   private isLogged = false;
@@ -213,6 +221,62 @@ class PuppeteerService {
           unitilizer,
         };
       }
+    } finally {
+      await page.close();
+    }
+  }
+
+  async searchUnitilizer(url: string) {
+    const browser = await this.getBrowser();
+    const page = await browser.newPage();
+
+    page.on("console", (msg) => {
+      console.log(`[LOG DO NAVEGADOR]:`, msg.text());
+    });
+
+    try {
+      await page.goto(url, { waitUntil: "networkidle2" });
+      await page.waitForSelector("#matricula", { visible: true });
+
+      await page.waitForSelector("#btn-rotulos", { visible: true });
+
+      await page.click("#btn-rotulos");
+
+      const finalData = await page.evaluate(() => {
+        const content = document.getElementById("tabela-rotulos");
+        if (!content) return [];
+
+        const tbody = content.querySelector("tbody");
+        if (!tbody) return [];
+
+        const rows = Array.from(tbody.children);
+        const unitizerDataRotulos: UnitizerRotulos[] = [];
+
+        console.log(tbody.children);
+
+        rows.forEach((row) => {
+          const elData = Array.from(row.children);
+
+          const direction = elData[1]?.textContent?.trim() || "";
+          const category = elData[2]?.textContent?.trim() || "";
+          const format = elData[3]?.textContent?.trim() || "";
+
+          const position = Number(elData[5]?.textContent) || 0;
+          const quantity = Number(elData[8]?.textContent) || 0;
+
+          unitizerDataRotulos.push({
+            category,
+            direction,
+            format,
+            position,
+            quantity,
+          });
+        });
+
+        return unitizerDataRotulos;
+      });
+
+      return finalData;
     } finally {
       await page.close();
     }
