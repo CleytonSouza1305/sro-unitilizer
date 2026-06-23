@@ -1,4 +1,7 @@
+import { config } from "dotenv"
 import puppeteer, { Browser } from "puppeteer";
+
+config()
 
 export interface Unitizer {
   number: string;
@@ -19,6 +22,10 @@ export interface UnitizerRotulos {
 class PuppeteerService {
   private browser: Browser | null = null;
   private isLogged = false;
+  
+  private user = process.env.PUPPETEER_USER
+  private pass = process.env.PUPPETEER_PASS
+  private url = process.env.SCRAPE_URL
 
   private async getBrowser(): Promise<Browser> {
     if (!this.browser || !this.browser.isConnected()) {
@@ -42,7 +49,7 @@ class PuppeteerService {
     return this.browser;
   }
 
-  async connectAndLogin(url: string, user: string, pass: string) {
+  private async connectAndLogin() {
     if (this.isLogged) return this.isLogged;
 
     const browser = await this.getBrowser();
@@ -67,7 +74,7 @@ class PuppeteerService {
           `[SRO] Tentando conectar e logar (Tentativa ${t}/${maxTentativas})...`,
         );
 
-        await page.goto(url, { waitUntil: "networkidle2", timeout: 45000 });
+        await page.goto(this.url, { waitUntil: "networkidle2", timeout: 45000 });
         await page.waitForSelector("a.logo", { visible: true, timeout: 20000 });
 
         await Promise.all([
@@ -81,8 +88,8 @@ class PuppeteerService {
         });
 
         if (ids.length >= 2) {
-          await page.type(`#${ids[0]}`, user);
-          await page.type(`#${ids[1]}`, pass);
+          await page.type(`#${ids[0]}`, this.user);
+          await page.type(`#${ids[1]}`, this.pass);
 
           await Promise.all([
             page.click("button.primario"),
@@ -98,6 +105,7 @@ class PuppeteerService {
         await page.close();
         return this.isLogged;
       } catch (error: any) {
+        console.log(error)
         console.error(`[Erro] Falha na tentativa ${t}:`, error.message);
 
         await page.close();
@@ -111,12 +119,14 @@ class PuppeteerService {
     }
   }
 
-  async getUnitilizer(url: string) {
+  async getUnitilizer() {
+    if (!this.isLogged) await this.connectAndLogin()
+
     const browser = await this.getBrowser();
     const page = await browser.newPage();
 
     try {
-      await page.goto(url);
+      await page.goto(this.url);
 
       const linkSelector = 'a[href*="expedicaoagencia/index.php"]';
       await page.evaluate(async (seletor) => {
@@ -178,7 +188,9 @@ class PuppeteerService {
     }
   }
 
-  async closeUnitilizer(url: string, unitilizer: string) {
+  async closeUnitilizer(unitilizer: string) {
+    if (!this.isLogged) await this.connectAndLogin()
+
     const browser = await this.getBrowser();
     const page = await browser.newPage();
 
@@ -187,7 +199,7 @@ class PuppeteerService {
     });
 
     try {
-      await page.goto(url, { waitUntil: "networkidle2" });
+      await page.goto(this.url, { waitUntil: "networkidle2" });
       await page.waitForSelector("#matricula", { visible: true });
 
       await page.type("#matricula", unitilizer);
@@ -226,7 +238,9 @@ class PuppeteerService {
     }
   }
 
-  async searchUnitilizer(url: string) {
+  async searchUnitilizer() {
+    if (!this.isLogged) await this.connectAndLogin()
+
     const browser = await this.getBrowser();
     const page = await browser.newPage();
 
@@ -235,7 +249,7 @@ class PuppeteerService {
     });
 
     try {
-      await page.goto(url, { waitUntil: "networkidle2" });
+      await page.goto(this.url, { waitUntil: "networkidle2" });
       await page.waitForSelector("#matricula", { visible: true });
 
       await page.waitForSelector("#btn-rotulos", { visible: true });
