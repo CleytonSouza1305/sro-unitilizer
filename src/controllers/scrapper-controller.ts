@@ -9,37 +9,7 @@ const url = process.env.SCRAPE_URL;
 
 const getUnitilizer: RequestHandler = async (req, res, next) => {
   try {
-    if (!url) {
-      throw new HttpError(
-        "MISSING_URL",
-        400,
-        "A URL de destino é obrigatória.",
-      );
-    }
-
-    const user = process.env.PUPPETEER_USER;
-    const pass = process.env.PUPPETEER_PASS;
-
-    if (!user || !pass) {
-      throw new HttpError(
-        "INTERNAL_CONFIG_ERROR",
-        500,
-        "Credenciais do serviço não configuradas no ambiente.",
-      );
-    }
-
-    const isConnected = await puppeteerService.connectAndLogin(url, user, pass);
-
-    if (!isConnected) {
-      throw new HttpError(
-        "PUPPETEER_AUTH_FAILED",
-        401,
-        "Não foi possível autenticar no serviço de expedição.",
-      );
-    }
-
-    const unitilizerData = await puppeteerService.getUnitilizer(url);
-
+    const unitilizerData = await puppeteerService.getUnitilizer();
     return res.json(unitilizerData);
   } catch (e) {
     next(e);
@@ -49,14 +19,6 @@ const getUnitilizer: RequestHandler = async (req, res, next) => {
 const closeUnitilizer: RequestHandler = async (req, res, next) => {
   try {
     const { unitilizers } = req.body;
-
-    if (!url) {
-      throw new HttpError(
-        "MISSING_URL",
-        400,
-        "A URL de destino é obrigatória.",
-      );
-    }
 
     if (
       !unitilizers ||
@@ -70,28 +32,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
       );
     }
 
-    const user = process.env.PUPPETEER_USER;
-    const pass = process.env.PUPPETEER_PASS;
-
-    if (!user || !pass) {
-      throw new HttpError(
-        "INTERNAL_CONFIG_ERROR",
-        500,
-        "Credenciais do serviço não configuradas no ambiente.",
-      );
-    }
-
-    const isConnected = await puppeteerService.connectAndLogin(url, user, pass);
-
-    if (!isConnected) {
-      throw new HttpError(
-        "PUPPETEER_AUTH_FAILED",
-        401,
-        "Não foi possível autenticar no serviço de expedição.",
-      );
-    }
-
-    const data = await puppeteerService.getUnitilizer(url);
+    const data = await puppeteerService.getUnitilizer();
 
     const results: {
       closeds: Unitizer[];
@@ -136,7 +77,6 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
       }
 
       const wasClosed = await puppeteerService.closeUnitilizer(
-        url,
         isValidUnitilizer.unitilizer,
       );
 
@@ -162,7 +102,15 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
     try {
       for (let i = 0; i < results.closeds.length; i++) {
         const currentData = results.closeds[i];
-        await Unitilizer.closeUnit(currentData, req.user.id);
+        if (!currentData) {
+          throw new HttpError(
+            "UNITILIZER_NOT_EXISTS",
+            404,
+            "Ocorreu um erro ao salvar as unidades fechadas, item não encontrado.",
+          );
+        }
+
+        i++;
       }
     } catch (e) {
       throw new HttpError(
@@ -184,32 +132,7 @@ const allObjects: RequestHandler = async (req, res, next) => {
 };
 
 const getAvaliableUnit: RequestHandler = async (req, res, next) => {
-  if (!url) {
-    throw new HttpError("MISSING_URL", 400, "A URL de destino é obrigatória.");
-  }
-
-  const user = process.env.PUPPETEER_USER;
-  const pass = process.env.PUPPETEER_PASS;
-
-  if (!user || !pass) {
-    throw new HttpError(
-      "INTERNAL_CONFIG_ERROR",
-      500,
-      "Credenciais do serviço não configuradas no ambiente.",
-    );
-  }
-
-  const isConnected = await puppeteerService.connectAndLogin(url, user, pass);
-
-  if (!isConnected) {
-    throw new HttpError(
-      "PUPPETEER_AUTH_FAILED",
-      401,
-      "Não foi possível autenticar no serviço de expedição.",
-    );
-  }
-
-  const data = await puppeteerService.searchUnitilizer(url);
+  const data = await puppeteerService.searchUnitilizer();
   res.json(data);
 };
 
