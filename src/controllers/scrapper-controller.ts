@@ -5,11 +5,11 @@ import { HttpError } from "../error/HttpError.js";
 import Unitilizer from "../model/Unitilizer.js";
 config();
 
-const url = process.env.SCRAPE_URL;
-
 const getUnitilizer: RequestHandler = async (req, res, next) => {
   try {
+
     const unitilizerData = await puppeteerService.getUnitilizer();
+
     return res.json(unitilizerData);
   } catch (e) {
     next(e);
@@ -136,4 +136,11 @@ const getAvaliableUnit: RequestHandler = async (req, res, next) => {
   res.json(data);
 };
 
-export { getUnitilizer, closeUnitilizer, allObjects, getAvaliableUnit };
+const dowloadUnitReq: RequestHandler = async (req, res, next) => {
+  const data = req.body.positions
+
+  const unitilizers = await puppeteerService.dowloadUnit(data)
+  res.json(unitilizers);
+};
+
+export { getUnitilizer, closeUnitilizer, allObjects, getAvaliableUnit, dowloadUnitReq };

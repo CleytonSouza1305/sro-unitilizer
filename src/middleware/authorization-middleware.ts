@@ -5,7 +5,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { UserRole } from "../generated/prisma/enums.js";
 
 interface UserCompletInterface {
-  id: string
+  id: string;
   username: string;
   email: string;
   password: string;
@@ -15,7 +15,7 @@ interface UserCompletInterface {
 declare global {
   namespace Express {
     interface Request {
-      user?: UserCompletInterface | JwtPayload
+      user?: UserCompletInterface | JwtPayload;
       isAuthorized?: boolean;
     }
   }
@@ -39,7 +39,7 @@ export const authorizationPermission: Handler = (req, res, next) => {
       );
     }
 
-    next()
+    next();
   } catch (e) {
     next(e);
   }
@@ -49,9 +49,12 @@ export const authorizationByToken: Handler = async (req, res, next) => {
   try {
     const authorizationHeader = req.headers.authorization;
     if (!authorizationHeader) {
-      throw new HttpError("MISSING_AUTHORIZATION", 401, "Authorization header missing.");
+      throw new HttpError(
+        "MISSING_AUTHORIZATION",
+        401,
+        "Authorization header missing.",
+      );
     }
-
 
     const token = authorizationHeader.split(" ")[1];
     if (!token) {
@@ -60,7 +63,11 @@ export const authorizationByToken: Handler = async (req, res, next) => {
 
     const key = process.env.JWT_SECRET;
     if (!key) {
-      throw new HttpError("INTERNAL_SERVER_ERROR", 500, "Secret key not found in environment variables.");
+      throw new HttpError(
+        "INTERNAL_SERVER_ERROR",
+        500,
+        "Secret key not found in environment variables.",
+      );
     }
 
     const decoded = jwt.verify(token, key);
@@ -76,12 +83,20 @@ export const authorizationByToken: Handler = async (req, res, next) => {
       throw new HttpError("USER_NOT_FOUND", 404, "User not found on database.");
     }
 
-    req.isAuthorized = true; 
+    req.isAuthorized = true;
     req.user = user;
 
     next();
   } catch (e) {
+    if (e?.name === "TokenExpiredError") {
+      const expiredDate = new Date(e.expiredAt)
+
+      throw new HttpError(
+        "EXPIRED_TOKEN", 
+        401, 
+        `Token expired at ${expiredDate.toLocaleString()}.`
+      );
+    }
     next(e);
   }
 };
-

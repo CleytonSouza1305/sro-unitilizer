@@ -1,8 +1,10 @@
 import { config } from "dotenv"
 import puppeteer, { Browser } from "puppeteer";
-
+import { config } from "dotenv"
+import fs from "fs";
+import path from "path";
+import * as pdf from "pdf-parse";
 config()
-
 export interface Unitizer {
   number: string;
   unitilizer: string;
@@ -22,7 +24,6 @@ export interface UnitizerRotulos {
 class PuppeteerService {
   private browser: Browser | null = null;
   private isLogged = false;
-  
   private user = process.env.PUPPETEER_USER
   private pass = process.env.PUPPETEER_PASS
   private url = process.env.SCRAPE_URL
@@ -32,6 +33,7 @@ class PuppeteerService {
       console.log("[PUPPETEER] Iniciando/Reiniciando navegador...");
 
       this.browser = await puppeteer.launch({
+        headless: false,
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
@@ -75,6 +77,7 @@ class PuppeteerService {
         );
 
         await page.goto(this.url, { waitUntil: "networkidle2", timeout: 45000 });
+        await page.goto(this.url, { waitUntil: "networkidle2", timeout: 45000 });
         await page.waitForSelector("a.logo", { visible: true, timeout: 20000 });
 
         await Promise.all([
@@ -88,6 +91,8 @@ class PuppeteerService {
         });
 
         if (ids.length >= 2) {
+          await page.type(`#${ids[0]}`, this.user);
+          await page.type(`#${ids[1]}`, this.pass);
           await page.type(`#${ids[0]}`, this.user);
           await page.type(`#${ids[1]}`, this.pass);
 
@@ -126,6 +131,7 @@ class PuppeteerService {
     const page = await browser.newPage();
 
     try {
+      await page.goto(this.url);
       await page.goto(this.url);
 
       const linkSelector = 'a[href*="expedicaoagencia/index.php"]';
@@ -293,6 +299,51 @@ class PuppeteerService {
       return finalData;
     } finally {
       await page.close();
+    }
+  }
+
+  async dowloadUnit(itemsForDowload: string[]) {
+    const browser = await this.getBrowser();
+    const page = await browser.newPage();
+
+    page.on("console", (msg) => {
+      console.log(`[LOG DO NAVEGADOR]:`, msg.text());
+    });
+
+    const unitilizersFounded: string[] = [];
+
+    try {
+      await page.goto(this.url, { waitUntil: "networkidle2" });
+      await page.waitForSelector("#btn-rotulos", { visible: true });
+
+      await page.click("#btn-rotulos");
+
+      const labelsData = await page.$$eval("a.imprimir", (element) => {
+        return element.map((el) => {
+          const dataString = el.getAttribute("data_direcao_gerar_rotulos");
+          return dataString ? JSON.parse(dataString) : null;
+        });
+      });
+
+      itemsForDowload.forEach((i) => {
+        const labelFounded = labelsData.find((label) => {
+          return label.posicao?.toString() === i.toString();
+        });
+
+        if (labelFounded) {
+          unitilizersFounded.push(labelFounded.nomeArquivo);
+        }
+      });
+      console.log(unitilizersFounded);
+      return unitilizersFounded;
+    } catch (error) {
+      console.error(
+        "[SERVER ERRO]: Falha na rotina do modal de unitilizadores:",
+        error,
+      );
+      throw error;
+    } finally {
+      // await page.close();
     }
   }
 }
