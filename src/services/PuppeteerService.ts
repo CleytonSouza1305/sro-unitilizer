@@ -1,6 +1,5 @@
 import { config } from "dotenv"
 import puppeteer, { Browser } from "puppeteer";
-import { config } from "dotenv"
 import fs from "fs";
 import path from "path";
 import * as pdf from "pdf-parse";
