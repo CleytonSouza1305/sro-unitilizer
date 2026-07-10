@@ -1,15 +1,32 @@
-import { config } from "dotenv"
+import { config } from "dotenv";
 import puppeteer, { Browser } from "puppeteer";
 import fs from "fs";
-import path from "path";
-import * as pdf from "pdf-parse";
-config()
+import path from "node:path";
+import { PDFParse } from "pdf-parse";
+
+config();
 export interface Unitizer {
   number: string;
   unitilizer: string;
   destination: string;
   date: string;
   objects: { data: string[]; quantity: number };
+}
+
+interface fileJson {
+  idEstacao: number;
+  nomeArquivo: string;
+  idDirecao: string;
+  categoria: string;
+  tipo: string;
+  celula: string;
+  abertura: number;
+  qtdAbertura: number;
+  isGerarTodos: string;
+  async: boolean;
+  leitor: string;
+  posicao: number;
+  tipoUnitizador: string;
 }
 
 export interface UnitizerRotulos {
@@ -23,9 +40,105 @@ export interface UnitizerRotulos {
 class PuppeteerService {
   private browser: Browser | null = null;
   private isLogged = false;
-  private user = process.env.PUPPETEER_USER
-  private pass = process.env.PUPPETEER_PASS
-  private url = process.env.SCRAPE_URL
+  private user = process.env.PUPPETEER_USER;
+  private pass = process.env.PUPPETEER_PASS;
+  private url = process.env.SCRAPE_URL;
+  private session_cookie: string | null = null;
+
+  private createBodyData(fileJson: fileJson): URLSearchParams {
+    const bodyParams = new URLSearchParams();
+    bodyParams.append("acao", "estacao-gerar-rotulos");
+    bodyParams.append("dados[idEstacao]", fileJson.idEstacao.toString());
+    bodyParams.append("dados[nomeArquivo]", fileJson.nomeArquivo);
+    bodyParams.append("dados[idDirecao]", fileJson.idDirecao);
+    bodyParams.append("dados[categoria]", fileJson.categoria);
+    bodyParams.append("dados[tipo]", fileJson.tipo);
+    bodyParams.append("dados[celula]", fileJson.celula);
+    bodyParams.append("dados[abertura]", fileJson.abertura.toString());
+    bodyParams.append("dados[qtdAbertura]", "1");
+    bodyParams.append("dados[isGerarTodos]", "N");
+    bodyParams.append("dados[async]", "true");
+    bodyParams.append("dados[leitor]", "N");
+    bodyParams.append("dados[posicao]", fileJson.posicao.toString());
+    bodyParams.append("dados[tipoUnitizador]", "MLA 04");
+    bodyParams.append("dados[isEtiquetaTermica]", "false");
+    bodyParams.append("dados[qtdCopiasDias]", "1");
+    bodyParams.append("dados[qtdCopiaSelecionada]", "1");
+    bodyParams.append("dados[rotulos][codSroSistema]", "70000049");
+    bodyParams.append("dados[rotulos][codSroOrig]", "04007971");
+    bodyParams.append("dados[rotulos][tipoEvento]", "RO");
+    bodyParams.append("dados[rotulos][impressoraTermica]", "N");
+    bodyParams.append("dados[rotulos][rotulos][0][codSroDest]", "0");
+    bodyParams.append("dados[rotulos][rotulos][0][unitizador]", "");
+    bodyParams.append("dados[rotulos][rotulos][0][siglaUnitizador]", "UB");
+    bodyParams.append("dados[rotulos][rotulos][0][tipoUnitizador]", "MLA 04");
+    bodyParams.append(
+      "dados[rotulos][rotulos][0][nomeSubRegiaoDest]",
+      "GENERATED_BY_SYSTEM",
+    );
+    bodyParams.append("dados[rotulos][rotulos][0][linhaTransporte]", "");
+    bodyParams.append("dados[rotulos][rotulos][0][horarioLinha]", "");
+    bodyParams.append(
+      "dados[rotulos][rotulos][0][posicao]",
+      fileJson.posicao.toString(),
+    );
+    bodyParams.append("dados[rotulos][rotulos][0][celula]", "UNICA");
+    bodyParams.append(
+      "dados[rotulos][rotulos][0][categoria]",
+      fileJson.categoria,
+    );
+    bodyParams.append("dados[rotulos][rotulos][0][formato]", fileJson.tipo);
+    bodyParams.append("dados[rotulos][rotulos][0][box]", "");
+    bodyParams.append("dados[rotulos][rotulos][0][idEstacao]", "1");
+    bodyParams.append("dados[rotulos][rotulos][0][qtdCopias]", "1");
+    return bodyParams;
+  }
+
+  private async processDownloadPdf(unitizers: fileJson[]): Promise<void> {
+    const relativePath = "../temp";
+    const absoluteFilePath = path.join(import.meta.dirname, relativePath);
+    const absoluteDirPath = path.dirname(absoluteFilePath);
+
+    if (!fs.existsSync(absoluteDirPath)) {
+      fs.mkdirSync(absoluteDirPath, { recursive: true });
+    }
+
+    if (!this.session_cookie) {
+      console.log(
+        `[COOKIE] Sessão expirada ou vazia para a URL: ${this.url}. Efetuando login...`,
+      );
+      await this.connectAndLogin();
+    }
+
+    for (const unitizer of unitizers) {
+      const fileName = unitizer.nomeArquivo;
+      const bodyParams = this.createBodyData(unitizer);
+
+      console.log(`[SRO] Iniciando download do arquivo: ${fileName}...`);
+
+      const response = await fetch("https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/controller.php", {
+        method: "POST",
+        headers: {
+          Cookie: this.session_cookie!,
+        },
+        body: bodyParams,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro na conexão HTTP: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const recibo = result.id;
+      const rotulo = result.dados.nomeArquivo;
+      const urlDownload = `https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/rotulo.php?recibo=${recibo}&rotulo=${rotulo}`;
+
+      console.log(
+        `[SRO] Baixando PDF de forma segura pelo navegador do Puppeteer...`,
+      );
+      // CONTINUAR AQUI A LÓGICA PARA BAIXAR...
+    }
+  }
 
   private async getBrowser(): Promise<Browser> {
     if (!this.browser || !this.browser.isConnected()) {
@@ -33,6 +146,7 @@ class PuppeteerService {
 
       this.browser = await puppeteer.launch({
         headless: false,
+        devtools: true,
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
@@ -51,7 +165,9 @@ class PuppeteerService {
   }
 
   private async connectAndLogin() {
-    if (this.isLogged) return this.isLogged;
+    if (this.isLogged && this.session_cookie) {
+      return this.session_cookie;
+    }
 
     const browser = await this.getBrowser();
     const maxTentativas = 3;
@@ -75,8 +191,14 @@ class PuppeteerService {
           `[SRO] Tentando conectar e logar (Tentativa ${t}/${maxTentativas})...`,
         );
 
-        await page.goto(this.url, { waitUntil: "networkidle2", timeout: 45000 });
-        await page.goto(this.url, { waitUntil: "networkidle2", timeout: 45000 });
+        await page.goto(this.url, {
+          waitUntil: "networkidle2",
+          timeout: 45000,
+        });
+        await page.goto(this.url, {
+          waitUntil: "networkidle2",
+          timeout: 45000,
+        });
         await page.waitForSelector("a.logo", { visible: true, timeout: 20000 });
 
         await Promise.all([
@@ -92,8 +214,6 @@ class PuppeteerService {
         if (ids.length >= 2) {
           await page.type(`#${ids[0]}`, this.user);
           await page.type(`#${ids[1]}`, this.pass);
-          await page.type(`#${ids[0]}`, this.user);
-          await page.type(`#${ids[1]}`, this.pass);
 
           await Promise.all([
             page.click("button.primario"),
@@ -106,10 +226,17 @@ class PuppeteerService {
         this.isLogged = true;
         console.log("[SRO] Logado com sucesso!");
 
+        const puppeteerCookies = await page.cookies();
+        const cookieString = puppeteerCookies
+          .map((cookie) => `${cookie.name}=${cookie.value}`)
+          .join("; ");
+
+        this.session_cookie = cookieString;
+
         await page.close();
         return this.isLogged;
       } catch (error: any) {
-        console.log(error)
+        console.log(error);
         console.error(`[Erro] Falha na tentativa ${t}:`, error.message);
 
         await page.close();
@@ -124,77 +251,33 @@ class PuppeteerService {
   }
 
   async getUnitilizer() {
-    if (!this.isLogged) await this.connectAndLogin()
-
-    const browser = await this.getBrowser();
-    const page = await browser.newPage();
-
     try {
-      await page.goto(this.url);
-      await page.goto(this.url);
+      if (!this.isLogged) await this.connectAndLogin()
 
-      const linkSelector = 'a[href*="expedicaoagencia/index.php"]';
-      await page.evaluate(async (seletor) => {
-        const link = document.querySelector(
-          seletor,
-        ) as HTMLAnchorElement | null;
-        if (link) link.click();
-      }, linkSelector);
+      const response = await fetch(`https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/controller.php?acao=estacao-unitizadores-itens&dados%5BcodSroOrig%5D=04007971&dados%5BexpNaoFinalizada%5D=0&_=1783442985059`, {
+        method: 'GET',
+        headers: {
+          Cookie: this.session_cookie!,
+        },
+      })
 
-      await page.waitForSelector("#btn-objetos", { visible: true });
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar dados, status: ${response.status}`)
+      }
 
-      await page.click("#btn-objetos");
-      const finalData = await page.evaluate(() => {
-        const cards = document.querySelectorAll(".card");
-        const unitizerData: Unitizer[] = [];
+      if (response.status === 401) {
+        await this.connectAndLogin()
+      }
 
-        cards.forEach((el) => {
-          const elData = Array.from(el.children) as HTMLElement[];
-
-          const splitedData = elData[3].innerText.split(" ");
-
-          const number = elData[0]?.innerText || "";
-          const destination = elData[1]?.innerText.includes(":")
-            ? elData[1].innerText.split(":")[1].trim()
-            : "";
-          const unitilizer = elData[2]?.innerText.includes(":")
-            ? elData[2].innerText.split(":")[1].trim()
-            : "";
-          const date =
-            splitedData.length >= 3
-              ? `${splitedData[1].trim()} - ${splitedData[2].trim()}`
-              : "";
-
-          const table = elData[4];
-          const objects = table
-            ? Array.from(table.querySelectorAll("tbody tr"))
-                .map((row) => {
-                  const td = row.querySelectorAll("td")[1];
-                  return td ? td.textContent.trim() : "";
-                })
-                .filter((txt) => txt !== "")
-            : [];
-
-          unitizerData.push({
-            number,
-            unitilizer,
-            destination,
-            date,
-            objects: { data: objects, quantity: objects.length },
-          });
-        });
-
-        return unitizerData;
-      });
-
-      return finalData;
-    } finally {
-      await page.close();
+      const data = await response.json()
+      return data;
+    } catch (e) {
+      console.log(`[ERROR] Erro inesperado ao buscar por unitilizadores:\n${e.message}`)
     }
   }
 
   async closeUnitilizer(unitilizer: string) {
-    if (!this.isLogged) await this.connectAndLogin()
+    if (!this.isLogged) await this.connectAndLogin();
 
     const browser = await this.getBrowser();
     const page = await browser.newPage();
@@ -244,7 +327,7 @@ class PuppeteerService {
   }
 
   async searchUnitilizer() {
-    if (!this.isLogged) await this.connectAndLogin()
+    if (!this.isLogged) await this.connectAndLogin();
 
     const browser = await this.getBrowser();
     const page = await browser.newPage();
@@ -301,48 +384,57 @@ class PuppeteerService {
     }
   }
 
-  async dowloadUnit(itemsForDowload: string[]) {
+  async downloadUnit(itemsForDownload: string[]): Promise<fileJson[]> {
+    if (!this.isLogged) await this.connectAndLogin();
+
     const browser = await this.getBrowser();
     const page = await browser.newPage();
 
-    page.on("console", (msg) => {
+    page.on("console", (msg: any) => {
       console.log(`[LOG DO NAVEGADOR]:`, msg.text());
     });
 
-    const unitilizersFounded: string[] = [];
+    const unitizersFound: fileJson[] = [];
 
     try {
       await page.goto(this.url, { waitUntil: "networkidle2" });
       await page.waitForSelector("#btn-rotulos", { visible: true });
-
       await page.click("#btn-rotulos");
 
-      const labelsData = await page.$$eval("a.imprimir", (element) => {
-        return element.map((el) => {
-          const dataString = el.getAttribute("data_direcao_gerar_rotulos");
-          return dataString ? JSON.parse(dataString) : null;
-        });
-      });
-
-      itemsForDowload.forEach((i) => {
-        const labelFounded = labelsData.find((label) => {
-          return label.posicao?.toString() === i.toString();
-        });
-
-        if (labelFounded) {
-          unitilizersFounded.push(labelFounded.nomeArquivo);
-        }
-      });
-      console.log(unitilizersFounded);
-      return unitilizersFounded;
-    } catch (error) {
-      console.error(
-        "[SERVER ERRO]: Falha na rotina do modal de unitilizadores:",
-        error,
+      const labelsData: (fileJson | null)[] = await page.$$eval(
+        "a.imprimir",
+        (elements) => {
+          return elements.map((el) => {
+            const dataString = el.getAttribute("data_direcao_gerar_rotulos");
+            console.log(dataString);
+            return dataString ? JSON.parse(dataString) : null;
+          });
+        },
       );
+
+      for (const item of itemsForDownload) {
+        const labelsMatched = labelsData.filter(
+          (label): label is fileJson =>
+            label !== null && label.posicao?.toString() === item.toString(),
+        );
+
+        if (labelsMatched.length > 0) {
+          unitizersFound.push(...labelsMatched);
+        }
+      }
+
+      console.log("Itens encontrados para download:", unitizersFound);
+
+      if (unitizersFound.length > 0) {
+        await this.processDownloadPdf(unitizersFound);
+      }
+
+      return unitizersFound;
+    } catch (error) {
+      console.error("[DOWNLOAD_ERROR]: Falha ao baixar unitilizadores:", error);
       throw error;
     } finally {
-      // await page.close();
+      await page.close();
     }
   }
 }

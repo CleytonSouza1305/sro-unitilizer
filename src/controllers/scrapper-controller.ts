@@ -7,7 +7,6 @@ config();
 
 const getUnitilizer: RequestHandler = async (req, res, next) => {
   try {
-
     const unitilizerData = await puppeteerService.getUnitilizer();
 
     return res.json(unitilizerData);
@@ -46,7 +45,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
       const currentUnit = unitilizers[i];
 
       const isValidUnitilizer = data.find(
-        (el) => el.unitilizer === currentUnit,
+        (el) => el.unitizador === currentUnit,
       );
 
       if (!isValidUnitilizer) {
@@ -57,11 +56,11 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
         continue;
       }
 
-      if (isValidUnitilizer.destination.toLowerCase().includes("cajamar")) {
+      if (isValidUnitilizer.plano.toLowerCase().includes("cajamar")) {
         const date = new Date();
         date.setHours(0, 0, 0, 0);
 
-        const dateString = isValidUnitilizer.date.split("-")[0].trim();
+        const dateString = isValidUnitilizer.data.split("-")[0].trim();
         const [day, month, year] = dateString.split("/");
 
         const unitilizerDate = new Date(+year, +month - 1, +day);
@@ -75,9 +74,9 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
 
         continue;
       }
-
+      
       const wasClosed = await puppeteerService.closeUnitilizer(
-        isValidUnitilizer.unitilizer,
+        isValidUnitilizer.unitizador,
       );
 
       if (wasClosed?.success) {
@@ -127,20 +126,38 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
 };
 
 const allObjects: RequestHandler = async (req, res, next) => {
-  const objects = await Unitilizer.totalObjectsToday();
-  res.json(objects);
+  try {
+    const objects = await Unitilizer.totalObjectsToday();
+    res.json(objects);
+  } catch (e) {
+    next(e);
+  }
 };
 
 const getAvaliableUnit: RequestHandler = async (req, res, next) => {
-  const data = await puppeteerService.searchUnitilizer();
-  res.json(data);
+  try {
+    const data = await puppeteerService.searchUnitilizer();
+    res.json(data);
+  } catch (e) {
+    next(e);
+  }
 };
 
 const dowloadUnitReq: RequestHandler = async (req, res, next) => {
-  const data = req.body.positions
+  try {
+    const data = req.body.positions;
 
-  const unitilizers = await puppeteerService.dowloadUnit(data)
-  res.json(unitilizers);
+    const unitilizers = await puppeteerService.downloadUnit(data);
+    res.json(unitilizers);
+  } catch (e) {
+    next(e);
+  }
 };
 
-export { getUnitilizer, closeUnitilizer, allObjects, getAvaliableUnit, dowloadUnitReq };
+export {
+  getUnitilizer,
+  closeUnitilizer,
+  allObjects,
+  getAvaliableUnit,
+  dowloadUnitReq,
+};

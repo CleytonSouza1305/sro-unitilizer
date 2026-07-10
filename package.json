@@ -19,6 +19,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/pdf-parse": "^1.1.5",
     "prisma": "^7.8.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0"
