@@ -1,15 +1,32 @@
 import { prisma } from "../database/index.js";
 
-interface CloseUnitInput {
-  number: string;
-  unitilizer: string;
-  destination: string;
-  date: string;
-  objects: { data: string[]; quantity: number };
+export interface Unitizer {
+  posicao: string;
+  unitizador: string;
+  direcao: string;
+  plano?: string;
+  data: string;
+  itens: {
+    id: string;
+    idExpedicao: string;
+    item: string;
+    peso: number;
+    expFixedNumber: string;
+    matricula: string;
+    cepDestino: string;
+    postagem: number;
+    data: string;
+    idEstacao: number;
+    idTelaPagina: string;
+    posicao: string;
+    devolucao: string;
+    dataMaximaEntrega: string;
+  }[];
 }
 
 export default class Unitilizer {
-  static closeUnit = async (data: CloseUnitInput, userId: string) => {
+  static closeUnit = async (data: Unitizer, userId: string) => {
+    console.log("Fechando...");
     const actualDate = new Date();
 
     const day = String(actualDate.getDate()).padStart(2, "0");
@@ -22,47 +39,67 @@ export default class Unitilizer {
 
     const formattedDate = `${day}/${month}/${year} - ${hours}:${minutes}:${seconds}`;
 
-    const unitilizer = await prisma.$transaction(async (tx) => {
-      const newUnitilizer = await tx.unitilizer.create({
-        data: {
-          open_at: data.date,
-          closed_at: formattedDate,
-          destination: data.destination,
-          number: +data.number,
-          unitilizer: data.unitilizer,
-          closed_by_userId: userId,
-        },
-      });
-
-      if (data.objects?.data?.length > 0) {
-        await tx.objects.createMany({
-          data: data.objects.data.map((l) => ({
-            label: l,
-            unitilizer_id: newUnitilizer.id
-          })),
-        });
-      }
-
-      return newUnitilizer;
+    const unitilizer = await prisma.unitilizer.create({
+      data: {
+        open_at: data.data,
+        closed_at: formattedDate,
+        destination: data.direcao,
+        number: +data.posicao,
+        unitilizer: data.unitizador,
+        closed_by_userId: userId,
+      },
+      include: {
+        closed_by_user: true,
+      },
     });
 
-    return unitilizer;
+    const objects = data.itens.map((i) => ({
+      label: i.item,
+      unitilizer_id: unitilizer.id,
+    }));
+
+    if (objects.length > 0) {
+      console.log(`Salvando objetos`);
+      const teste = await prisma.objects.createMany({
+        data: objects,
+      });
+      console.log(`Objetos salvos: ${teste}`);
+    }
+
+    const { closed_by_user, ...unitilizerData } = unitilizer;
+
+    return {
+      data: unitilizerData,
+      user: {
+        name: closed_by_user.username
+      },
+    };
   };
 
   static totalObjectsToday = async () => {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    const date = new Date();
 
-    const endOfToday = new Date();
-    endOfToday.setHours(23, 59, 59, 999);
+    const firstDay = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 2, 0);
 
-    return await prisma.objects.count({
+    const objects = await prisma.objects.count({
       where: {
         created_at: {
-          gte: startOfToday,
-          lte: endOfToday,
+          gte: new Date(firstDay),
+          lte: new Date(lastDay),
         },
       },
     });
+
+    return objects;
+
+    // return await prisma.objects.count({
+    //   where: {
+    //     created_at: {
+    //       gte: startOfToday,
+    //       lte: endOfToday,
+    //     },
+    //   },
+    // });
   };
 }

@@ -1,7 +1,8 @@
 import { config } from "dotenv";
 import { RequestHandler } from "express";
-import { puppeteerService, Unitizer } from "../services/PuppeteerService.js";
+import { puppeteerService } from "../services/PuppeteerService.js";
 import { HttpError } from "../error/HttpError.js";
+import Unitizer from "../model/Unitilizer.js";
 import Unitilizer from "../model/Unitilizer.js";
 config();
 
@@ -34,7 +35,10 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
     const data = await puppeteerService.getUnitilizer();
 
     const results: {
-      closeds: Unitizer[];
+      closeds: {
+        message: string;
+        unitilizer: string;
+      }[];
       error: { unitilizer: string; reason: string }[];
     } = {
       closeds: [],
@@ -51,41 +55,37 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
       if (!isValidUnitilizer) {
         results.error.push({
           unitilizer: currentUnit,
-          reason: "Não encontrado na base de destino",
+          reason: "Não encontrado na base de dados disponíveis.",
         });
         continue;
       }
 
-      if (isValidUnitilizer.plano.toLowerCase().includes("cajamar")) {
-        const date = new Date();
-        date.setHours(0, 0, 0, 0);
-
-        const dateString = isValidUnitilizer.data.split("-")[0].trim();
-        const [day, month, year] = dateString.split("/");
-
-        const unitilizerDate = new Date(+year, +month - 1, +day);
-        if (date <= unitilizerDate) {
-          results.error.push({
-            unitilizer: currentUnit,
-            reason: `Bloqueado: Não é permitido fechar "${isValidUnitilizer.destination}" no mesmo dia da abertura.`,
-          });
-          continue;
-        }
-
+      const direction = isValidUnitilizer.direcao ?? isValidUnitilizer.plano
+      if (direction.toLowerCase().includes("cajamar")) {
+        results.error.push({
+          unitilizer: isValidUnitilizer.unitizador,
+          reason: `Bloqueado: Não é possível enviar os dados de "${direction}", necessário encaminhar manualmente`,
+        });
         continue;
       }
-      
-      const wasClosed = await puppeteerService.closeUnitilizer(
+
+      const wasClosed = await puppeteerService.closeUnitilizerPuppeteer(
         isValidUnitilizer.unitizador,
       );
 
+      const unitizer = wasClosed.unitilizer.toUpperCase();
+
       if (wasClosed?.success) {
-        results.closeds.push(isValidUnitilizer);
-        continue;
+        const saveOnDb = await Unitilizer.closeUnit(isValidUnitilizer, req.user.id)
+
+        results.closeds.push({
+          message: `Unitizador "${unitizer}" fechado com sucesso por "${saveOnDb.user.name}"`,
+          unitilizer: unitizer,
+        });
       } else {
         results.error.push({
-          unitilizer: currentUnit,
-          reason: "O serviço do robô não retornou confirmação de sucesso.",
+          unitilizer: unitizer,
+          reason: `Não foi possível fechar o unitizador "${unitizer}".`,
         });
       }
     }
