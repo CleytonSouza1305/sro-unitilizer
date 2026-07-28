@@ -289,7 +289,7 @@ class PuppeteerService {
     }
   }
 
-  private async openUnitizador(unitizador: string) {
+  private async openUnitizador(unitizador: string, direction?: string) {
     try {
       const timestamp = Date.now();
       const url = `https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/controller.php?acao=estacao-validar-rotulo-unitizador&dados%5BcodSroOrig%5D=04007971&dados%5BnumeroUnitizador%5D=${unitizador}&_=${timestamp}`;
@@ -308,7 +308,41 @@ class PuppeteerService {
       }
 
       const json = await response.json()
-      console.log(json)
+      
+      const params = new URLSearchParams();
+
+      params.append("acao", "estacao-gravar-unitizador")
+      params.append("dados[id]", "")
+      params.append("dados[idEstacao]", json.idEstacao)
+      params.append("dados[data]", json.dtHrgeracao)
+      params.append("dados[evento]", json.evento)
+      params.append("dados[unitizador]", json.id)
+      params.append("dados[peso]", "0")
+      params.append("dados[matricula]", this.user)
+      params.append("dados[celula]", json.celula)
+      params.append("dados[subCelula]", "1")
+      params.append("dados[posicao]", json.posicao)
+      params.append("dados[codSroOrig]", json.codSroOrig)
+      params.append("dados[codSroDest]", json.codSroDest)
+      params.append("dados[noEstacao]", json.codSroOrig)
+      params.append("dados[turno]", "1")
+      params.append("dados[plano]", direction)
+      params.append("dados[categoria]", json.categoria.toUpperCase())
+      params.append("dados[formato]", json.formato.toUpperCase())
+      params.append("dados[direcao]", direction)
+      params.append("dados[versao_plano]", "0")
+      params.append("dados[inTipoVolumoso]", "N")
+      params.append("dados[inTipoExpedicao]", "R")
+      params.append("dados[expGeolocation]", "N")
+      params.append("dados[descricaoMatrizDirecao]", "NAOINFORMADO")
+
+      await fetch("https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/controller.php", {
+        method: "POST",
+        headers: {
+          Cookie: this.session_cookie!,
+        },
+        body: params
+      });
 
     } catch (e) {
       console.error(`Erro ao abrir unitizador: ${e.message}`);
