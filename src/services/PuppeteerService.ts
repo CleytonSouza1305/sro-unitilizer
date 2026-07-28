@@ -86,7 +86,7 @@ class PuppeteerService {
     bodyParams.append("dados[rotulos][rotulos][0][idEstacao]", fileJson.idEstacao.toString());
     bodyParams.append("dados[rotulos][rotulos][0][qtdCopias]", "1");
 
-    return bodyParams;
+    return { body: bodyParams, direction: unit.direction };
   }
 
   private async readPdf(response: Response): Promise<string | null> {
@@ -121,6 +121,7 @@ class PuppeteerService {
       for (const unitizer of unitizers) {
         const fileName = unitizer.nomeArquivo;
         const bodyParams = await this.createBodyData(unitizer);
+        const { body } = bodyParams
 
         console.log(`[SRO] Iniciando download do arquivo: ${fileName}...`);
 
@@ -131,7 +132,7 @@ class PuppeteerService {
             headers: {
               Cookie: this.session_cookie!,
             },
-            body: bodyParams,
+            body
           },
         );
 
@@ -170,7 +171,7 @@ class PuppeteerService {
 
         const unitizador = await this.readPdf(pdfFetchResponse);
 
-        if (unitizador) unitizadores.push({ unitizador, data: unitizer });
+        if (unitizador) unitizadores.push({ unitizador, data: unitizer, direction: bodyParams.direction });
       }
 
       return unitizadores;
@@ -336,7 +337,7 @@ class PuppeteerService {
       params.append("dados[expGeolocation]", "N")
       params.append("dados[descricaoMatrizDirecao]", "NAOINFORMADO")
 
-      await fetch("https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/controller.php", {
+      const isOpen = await fetch("https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/controller.php", {
         method: "POST",
         headers: {
           Cookie: this.session_cookie!,
@@ -344,6 +345,8 @@ class PuppeteerService {
         body: params
       });
 
+      const data = await isOpen.json()
+      return data
     } catch (e) {
       console.error(`Erro ao abrir unitizador: ${e.message}`);
     }
@@ -527,6 +530,17 @@ class PuppeteerService {
         },
       );
 
+      const oppened: {
+      oppeneds: {
+        message: string;
+        unitilizer: string;
+      }[];
+      error: { unitilizer: string; reason: string }[];
+    } = {
+      oppeneds: [],
+      error: [],
+    };
+
       for (const item of itemsForDownload) {
         const labelsMatched = labelsData.filter(
           (label): label is FileJson =>
@@ -543,9 +557,22 @@ class PuppeteerService {
 
         if (avaliableUnits.length > 0) {
           for (const unit of avaliableUnits) {
-            await this.openUnitizador(unit.unitizador);
+            const message = await this.openUnitizador(unit.unitizador, unit.direction);
+            
+            if (message.erro) {
+              oppened.error.push({ 
+                reason: message.mensagem.split(':')[1], unitilizer: unit.unitizador 
+              })
+            } else {
+              oppened.oppeneds.push({
+                message: `Unitizador "${message.unitizador}" para direção ${message.plano ?? message.direcao} aberto com sucesso!`,
+                unitilizer: unit.unitizador
+              })
+            }
           }
         }
+
+        return oppened
       }
     } catch (error) {
       console.error("[DOWNLOAD_ERROR]: Falha ao baixar unitilizadores:", error);
