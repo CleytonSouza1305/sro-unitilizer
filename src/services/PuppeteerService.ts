@@ -9,17 +9,19 @@ const pdf = require("pdf-parse");
 config();
 
 export interface FileJson {
-  idEstacao?: number;
+  idEstacao: number;
   nomeArquivo: string;
   idDirecao: string;
   categoria: string;
   tipo: string;
-  celula?: string;
-  abertura?: number;
+  celula: string;
+  abertura: number;
   posicao: number;
-  nomeSubRegiaoDest: string;
-  codSroDest?: string;
-  codSroOrig?: string;
+  qtdAbertura: number,
+  isGerarTodos: string,
+  async: boolean,
+  leitor: string,
+  tipoUnitizador: string
 }
 
 export interface UnitizerRotulos {
@@ -40,79 +42,49 @@ class PuppeteerService {
 
   private async createBodyData(fileJson: FileJson) {
     const allUnitis = await this.searchUnitilizer();
-
     const unit = allUnitis.find(
       (e) => e.position.toString() === fileJson.posicao.toString(),
     );
 
-    console.log(unit);
-
-    const codSroDestino =
-      fileJson.codSroDest || fileJson.nomeArquivo.split("_")[0];
-    const codSroOrigem = fileJson.codSroOrig || "04007971";
-    const idEstacaoStr = (fileJson.idEstacao || 1).toString();
-    const posicaoStr = fileJson.posicao.toString();
-    const celula = fileJson.celula || "UNICA";
-    const aberturaStr = (fileJson.abertura || 1).toString();
-
+    const codSroDest = fileJson.nomeArquivo.split("_")[0]
+ 
     const bodyParams = new URLSearchParams();
 
-    // ==========================================
-    // 1. AÇÃO E CONFIGURAÇÕES FIXAS DA ESTAÇÃO
-    // ==========================================
     bodyParams.append("acao", "estacao-gerar-rotulos");
-    bodyParams.append("dados[qtdAbertura]", "1");
-    bodyParams.append("dados[isGerarTodos]", "N");
-    bodyParams.append("dados[async]", "true");
-    bodyParams.append("dados[leitor]", "N");
-    bodyParams.append("dados[tipoUnitizador]", "MLA 04");
+    bodyParams.append("dados[idEstacao]", fileJson.idEstacao.toString());
+    bodyParams.append("dados[nomeArquivo]", fileJson.nomeArquivo);
+    bodyParams.append("dados[idDirecao]", fileJson.idDirecao);
+    bodyParams.append("dados[categoria]", fileJson.categoria);
+    bodyParams.append("dados[tipo]", fileJson.tipo);
+    bodyParams.append("dados[celula]", fileJson.celula);
+    bodyParams.append("dados[abertura]", fileJson.abertura.toString());
+    bodyParams.append("dados[qtdAbertura]", fileJson.qtdAbertura.toString());
+    bodyParams.append("dados[isGerarTodos]", fileJson.isGerarTodos);
+    bodyParams.append("dados[async]", fileJson.async.toString());
+    bodyParams.append("dados[leitor]", fileJson.leitor);
+    bodyParams.append("dados[posicao]", fileJson.posicao.toString());
+    bodyParams.append("dados[tipoUnitizador]", fileJson.tipoUnitizador);
     bodyParams.append("dados[isEtiquetaTermica]", "false");
     bodyParams.append("dados[qtdCopiasDias]", "1");
     bodyParams.append("dados[qtdCopiaSelecionada]", "1");
-
-    // ==========================================
-    // 2. CONFIGURAÇÕES FIXAS DO RÓTULO/SISTEMA
-    // ==========================================
     bodyParams.append("dados[rotulos][codSroSistema]", "70000049");
-    bodyParams.append("dados[rotulos][tipoEvento]", "RO");
+    bodyParams.append("dados[rotulos][codSroOrig]", "04007971");
+    bodyParams.append("dados[rotulos][tipoEvento]", "RO")
     bodyParams.append("dados[rotulos][impressoraTermica]", "N");
-
-    // ==========================================
-    // 3. CONFIGURAÇÕES FIXAS DA SUB-REGIONAL
-    // ==========================================
+    bodyParams.append("dados[rotulos][rotulos][0][codSroDest]", codSroDest);
     bodyParams.append("dados[rotulos][rotulos][0][unitizador]", "");
     bodyParams.append("dados[rotulos][rotulos][0][siglaUnitizador]", "UB");
-    bodyParams.append("dados[rotulos][rotulos][0][tipoUnitizador]", "MLA 04");
+    bodyParams.append("dados[rotulos][rotulos][0][tipoUnitizador]", fileJson.tipoUnitizador);
+    bodyParams.append("ddados[rotulos][rotulos][0][nomeSubRegiaoDest]", unit.direction);
     bodyParams.append("dados[rotulos][rotulos][0][linhaTransporte]", "");
     bodyParams.append("dados[rotulos][rotulos][0][horarioLinha]", "");
+    bodyParams.append("dados[rotulos][rotulos][0][posicao]", fileJson.posicao.toString());
+    bodyParams.append("dados[rotulos][rotulos][0][celula]", fileJson.celula);
+    bodyParams.append("dados[rotulos][rotulos][0][categoria]", fileJson.categoria);
+    bodyParams.append("dados[rotulos][rotulos][0][formato]", fileJson.tipo);
     bodyParams.append("dados[rotulos][rotulos][0][box]", "");
+    bodyParams.append("dados[rotulos][rotulos][0][idEstacao]", fileJson.idEstacao.toString());
     bodyParams.append("dados[rotulos][rotulos][0][qtdCopias]", "1");
-
-    // ===========================================================================
-    // CAMPOS DINÂMICOS (Descomente e passe as variáveis ao processar cada item)
-    // ===========================================================================
-
-    // --- Dados da Estação / Arquivo ---
-    // bodyParams.append("dados[idEstacao]", idEstacaoStr);
-    // bodyParams.append("dados[nomeArquivo]", fileJson.nomeArquivo);
-    // bodyParams.append("dados[idDirecao]", fileJson.idDirecao);
-    // bodyParams.append("dados[categoria]", (fileJson.categoria || "SEDEX").toUpperCase());
-    // bodyParams.append("dados[tipo]", (fileJson.tipo || "ENVELOPE").toUpperCase());
-    // bodyParams.append("dados[celula]", celula);
-    // bodyParams.append("dados[abertura]", aberturaStr);
-    // bodyParams.append("dados[posicao]", posicaoStr);
-
-    // --- Origem ---
-    // bodyParams.append("dados[rotulos][codSroOrig]", codSroOrigem);
-
-    // --- Destino / Direção ---
-    // bodyParams.append("dados[rotulos][rotulos][0][codSroDest]", codSroDestino);
-    // bodyParams.append("dados[rotulos][rotulos][0][nomeSubRegiaoDest]", unit.direction ?? 'CTE SAÚDE');
-    // bodyParams.append("dados[rotulos][rotulos][0][posicao]", posicaoStr);
-    // bodyParams.append("dados[rotulos][rotulos][0][celula]", celula);
-    // bodyParams.append("dados[rotulos][rotulos][0][categoria]", (fileJson.categoria || "SEDEX").toUpperCase());
-    // bodyParams.append("dados[rotulos][rotulos][0][formato]", (fileJson.tipo || "ENVELOPE").toUpperCase());
-    // bodyParams.append("dados[rotulos][rotulos][0][idEstacao]", idEstacaoStr);
 
     return bodyParams;
   }
@@ -149,8 +121,6 @@ class PuppeteerService {
       for (const unitizer of unitizers) {
         const fileName = unitizer.nomeArquivo;
         const bodyParams = await this.createBodyData(unitizer);
-
-        console.log(`[DEBUG]:`, bodyParams);
 
         console.log(`[SRO] Iniciando download do arquivo: ${fileName}...`);
 
@@ -319,10 +289,9 @@ class PuppeteerService {
     }
   }
 
-  private async openUnitizador(unitizador: string, data: FileJson) {
+  private async openUnitizador(unitizador: string) {
     try {
       const timestamp = Date.now();
-
       const url = `https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/controller.php?acao=estacao-validar-rotulo-unitizador&dados%5BcodSroOrig%5D=04007971&dados%5BnumeroUnitizador%5D=${unitizador}&_=${timestamp}`;
 
       const response = await fetch(url, {
@@ -338,53 +307,9 @@ class PuppeteerService {
         );
       }
 
-      const json = await response.json();
-      console.log(json);
+      const json = await response.json()
+      console.log(json)
 
-      const { categoria } = data;
-
-      const params = new URLSearchParams();
-
-      params.append("acao", "estacao-gravar-unitizador");
-      params.append("dados[id]", "");
-      params.append("dados[idEstacao]", json.idEstacao || "1");
-      params.append("dados[data]", json.dtHrgeracao);
-      params.append("dados[evento]", json.evento || "RO");
-      params.append("dados[unitizador]", json.id);
-      params.append("dados[peso]", "0");
-      params.append("dados[matricula]", this.user);
-      params.append("dados[celula]", json.celula || "UNICA");
-      params.append("dados[subCelula]", "1");
-      params.append("dados[posicao]", json.posicao);
-      params.append("dados[codSroOrig]", json.codSroOrig);
-      params.append("dados[codSroDest]", json.codSroDest);
-      params.append("dados[noEstacao]", json.codSroOrig);
-      params.append("dados[turno]", "1");
-      // params.append("dados[plano]", planoDirecao);
-      // params.append("dados[categoria]", categoria);
-      // params.append("dados[formato]", formato).;
-      // params.append("dados[direcao]", planoDirecao);
-      params.append("dados[versao_plano]", "0");
-      params.append("dados[inTipoVolumoso]", "N");
-      params.append("dados[inTipoExpedicao]", "R");
-      params.append("dados[expGeolocation]", "N");
-      params.append("dados[descricaoMatrizDirecao]", "NAOINFORMADO");
-
-      await fetch(
-        "https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/controller.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            Cookie: this.session_cookie,
-          },
-          body: params,
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Erro ao gravar unitizador: HTTP ${response.status}`);
-      }
     } catch (e) {
       console.error(`Erro ao abrir unitizador: ${e.message}`);
     }
@@ -584,7 +509,7 @@ class PuppeteerService {
 
         if (avaliableUnits.length > 0) {
           for (const unit of avaliableUnits) {
-            await this.openUnitizador(unit.unitizador, unit.data);
+            await this.openUnitizador(unit.unitizador);
           }
         }
       }
