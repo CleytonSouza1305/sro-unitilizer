@@ -53,17 +53,18 @@ export default class Unitilizer {
       },
     });
 
-    const objects = data.itens.map((i) => ({
-      label: i.item,
-      unitilizer_id: unitilizer.id,
-    }));
+    console.log(data)
 
-    if (objects.length > 0) {
-      console.log(`Salvando objetos`);
-      const teste = await prisma.objects.createMany({
+    if (data.itens && data.itens.length > 0) {
+      const objects = data.itens.map((i) => ({
+        label: i.item,
+        unitilizer_id: unitilizer.id,
+      }));
+
+      const objectsSaved = await prisma.objects.createMany({
         data: objects,
       });
-      console.log(`Objetos salvos: ${teste}`);
+      console.log(`Objetos salvos: ${objectsSaved}`);
     }
 
     const { closed_by_user, ...unitilizerData } = unitilizer;
@@ -71,7 +72,7 @@ export default class Unitilizer {
     return {
       data: unitilizerData,
       user: {
-        name: closed_by_user.username
+        name: closed_by_user.username,
       },
     };
   };
