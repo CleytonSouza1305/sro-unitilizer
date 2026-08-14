@@ -542,6 +542,7 @@ class PuppeteerService {
     };
 
       for (const item of itemsForDownload) {
+        console.log(item)
         const labelsMatched = labelsData.filter(
           (label): label is FileJson =>
             label !== null && label.posicao?.toString() === item.toString(),
@@ -562,18 +563,19 @@ class PuppeteerService {
             if (message.erro) {
               oppened.error.push({ 
                 reason: message.mensagem.split(':')[1], unitilizer: unit.unitizador 
-              })
+              });
             } else {
               oppened.oppeneds.push({
                 message: `Unitizador "${message.unitizador}" para direção ${message.plano ?? message.direcao} aberto com sucesso!`,
                 unitilizer: unit.unitizador
-              })
+              });
             }
           }
         }
-
-        return oppened
       }
+
+      return oppened; 
+      
     } catch (error) {
       console.error("[DOWNLOAD_ERROR]: Falha ao baixar unitilizadores:", error);
       throw error;

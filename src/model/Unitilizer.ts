@@ -26,7 +26,6 @@ export interface Unitizer {
 
 export default class Unitilizer {
   static closeUnit = async (data: Unitizer, userId: string) => {
-    console.log("Fechando...");
     const actualDate = new Date();
 
     const day = String(actualDate.getDate()).padStart(2, "0");
@@ -53,7 +52,7 @@ export default class Unitilizer {
       },
     });
 
-    console.log(data)
+    console.log(data);
 
     if (data.itens && data.itens.length > 0) {
       const objects = data.itens.map((i) => ({
@@ -78,29 +77,24 @@ export default class Unitilizer {
   };
 
   static totalObjectsToday = async () => {
-    const date = new Date();
+    const now = new Date();
 
-    const firstDay = new Date(date.getFullYear(), date.getMonth() - 1, 1);
-    const lastDay = new Date(date.getFullYear(), date.getMonth() + 2, 0);
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDayNextMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1,
+    );
 
     const objects = await prisma.objects.count({
       where: {
         created_at: {
-          gte: new Date(firstDay),
-          lte: new Date(lastDay),
+          gte: firstDay,
+          lte: firstDayNextMonth
         },
       },
     });
 
     return objects;
-
-    // return await prisma.objects.count({
-    //   where: {
-    //     created_at: {
-    //       gte: startOfToday,
-    //       lte: endOfToday,
-    //     },
-    //   },
-    // });
   };
 }
