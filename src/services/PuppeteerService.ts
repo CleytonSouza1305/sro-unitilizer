@@ -535,7 +535,7 @@ class PuppeteerService {
         message: string;
         unitilizer: string;
       }[];
-      error: { unitilizer: string; reason: string }[];
+      error: { unitilizer: string; message: string }[];
     } = {
       oppeneds: [],
       error: [],
@@ -561,11 +561,11 @@ class PuppeteerService {
             
             if (message.erro) {
               oppened.error.push({ 
-                reason: message.mensagem.split(':')[1], unitilizer: unit.unitizador 
+                message: message.mensagem.split(':')[1], unitilizer: unit.unitizador 
               })
             } else {
               oppened.oppeneds.push({
-                message: `Unitizador "${message.unitizador}" para direção ${message.plano ?? message.direcao} aberto com sucesso!`,
+                message: `Unitizador "${message.unitizador}" aberto com sucesso para direção "${message.plano ?? message.direcao}"`,
                 unitilizer: unit.unitizador
               })
             }
