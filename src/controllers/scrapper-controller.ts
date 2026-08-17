@@ -39,7 +39,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
         message: string;
         unitilizer: string;
       }[];
-      error: { unitilizer: string; reason: string }[];
+      error: { unitilizer: string; message: string }[];
     } = {
       closeds: [],
       error: [],
@@ -55,7 +55,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
       if (!isValidUnitilizer) {
         results.error.push({
           unitilizer: currentUnit,
-          reason: "Não encontrado na base de dados disponíveis.",
+          message: "Não encontrado na base de dados disponíveis.",
         });
         continue;
       }
@@ -64,7 +64,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
       if (direction.toLowerCase().includes("cajamar")) {
         results.error.push({
           unitilizer: isValidUnitilizer.unitizador,
-          reason: `Bloqueado: Não é possível enviar os dados de "${direction}", necessário encaminhar manualmente`,
+          message: `Bloqueado: Não é possível enviar os dados de "${direction}", necessário encaminhar manualmente`,
         });
         continue;
       }
@@ -85,7 +85,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
       } else {
         results.error.push({
           unitilizer: unitizer,
-          reason: `Não foi possível fechar o unitizador "${unitizer}".`,
+          message: `Não foi possível fechar o unitizador "${unitizer}".`,
         });
       }
     }
