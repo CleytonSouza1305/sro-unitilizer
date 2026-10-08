@@ -17,11 +17,11 @@ export interface FileJson {
   celula: string;
   abertura: number;
   posicao: number;
-  qtdAbertura: number,
-  isGerarTodos: string,
-  async: boolean,
-  leitor: string,
-  tipoUnitizador: string
+  qtdAbertura: number;
+  isGerarTodos: string;
+  async: boolean;
+  leitor: string;
+  tipoUnitizador: string;
 }
 
 export interface UnitizerRotulos {
@@ -46,8 +46,8 @@ class PuppeteerService {
       (e) => e.position.toString() === fileJson.posicao.toString(),
     );
 
-    const codSroDest = fileJson.nomeArquivo.split("_")[0]
- 
+    const codSroDest = fileJson.nomeArquivo.split("_")[0];
+
     const bodyParams = new URLSearchParams();
 
     bodyParams.append("acao", "estacao-gerar-rotulos");
@@ -69,21 +69,36 @@ class PuppeteerService {
     bodyParams.append("dados[qtdCopiaSelecionada]", "1");
     bodyParams.append("dados[rotulos][codSroSistema]", "70000049");
     bodyParams.append("dados[rotulos][codSroOrig]", "04007971");
-    bodyParams.append("dados[rotulos][tipoEvento]", "RO")
+    bodyParams.append("dados[rotulos][tipoEvento]", "RO");
     bodyParams.append("dados[rotulos][impressoraTermica]", "N");
     bodyParams.append("dados[rotulos][rotulos][0][codSroDest]", codSroDest);
     bodyParams.append("dados[rotulos][rotulos][0][unitizador]", "");
     bodyParams.append("dados[rotulos][rotulos][0][siglaUnitizador]", "UB");
-    bodyParams.append("dados[rotulos][rotulos][0][tipoUnitizador]", fileJson.tipoUnitizador);
-    bodyParams.append("ddados[rotulos][rotulos][0][nomeSubRegiaoDest]", unit.direction);
+    bodyParams.append(
+      "dados[rotulos][rotulos][0][tipoUnitizador]",
+      fileJson.tipoUnitizador,
+    );
+    bodyParams.append(
+      "ddados[rotulos][rotulos][0][nomeSubRegiaoDest]",
+      unit.direction,
+    );
     bodyParams.append("dados[rotulos][rotulos][0][linhaTransporte]", "");
     bodyParams.append("dados[rotulos][rotulos][0][horarioLinha]", "");
-    bodyParams.append("dados[rotulos][rotulos][0][posicao]", fileJson.posicao.toString());
+    bodyParams.append(
+      "dados[rotulos][rotulos][0][posicao]",
+      fileJson.posicao.toString(),
+    );
     bodyParams.append("dados[rotulos][rotulos][0][celula]", fileJson.celula);
-    bodyParams.append("dados[rotulos][rotulos][0][categoria]", fileJson.categoria);
+    bodyParams.append(
+      "dados[rotulos][rotulos][0][categoria]",
+      fileJson.categoria,
+    );
     bodyParams.append("dados[rotulos][rotulos][0][formato]", fileJson.tipo);
     bodyParams.append("dados[rotulos][rotulos][0][box]", "");
-    bodyParams.append("dados[rotulos][rotulos][0][idEstacao]", fileJson.idEstacao.toString());
+    bodyParams.append(
+      "dados[rotulos][rotulos][0][idEstacao]",
+      fileJson.idEstacao.toString(),
+    );
     bodyParams.append("dados[rotulos][rotulos][0][qtdCopias]", "1");
 
     return { body: bodyParams, direction: unit.direction };
@@ -121,7 +136,7 @@ class PuppeteerService {
       for (const unitizer of unitizers) {
         const fileName = unitizer.nomeArquivo;
         const bodyParams = await this.createBodyData(unitizer);
-        const { body } = bodyParams
+        const { body } = bodyParams;
 
         console.log(`[SRO] Iniciando download do arquivo: ${fileName}...`);
 
@@ -132,7 +147,7 @@ class PuppeteerService {
             headers: {
               Cookie: this.session_cookie!,
             },
-            body
+            body,
           },
         );
 
@@ -171,7 +186,12 @@ class PuppeteerService {
 
         const unitizador = await this.readPdf(pdfFetchResponse);
 
-        if (unitizador) unitizadores.push({ unitizador, data: unitizer, direction: bodyParams.direction });
+        if (unitizador)
+          unitizadores.push({
+            unitizador,
+            data: unitizer,
+            direction: bodyParams.direction,
+          });
       }
 
       return unitizadores;
@@ -308,45 +328,48 @@ class PuppeteerService {
         );
       }
 
-      const json = await response.json()
-      
+      const json = await response.json();
+
       const params = new URLSearchParams();
 
-      params.append("acao", "estacao-gravar-unitizador")
-      params.append("dados[id]", "")
-      params.append("dados[idEstacao]", json.idEstacao)
-      params.append("dados[data]", json.dtHrgeracao)
-      params.append("dados[evento]", json.evento)
-      params.append("dados[unitizador]", json.id)
-      params.append("dados[peso]", "0")
-      params.append("dados[matricula]", this.user)
-      params.append("dados[celula]", json.celula)
-      params.append("dados[subCelula]", "1")
-      params.append("dados[posicao]", json.posicao)
-      params.append("dados[codSroOrig]", json.codSroOrig)
-      params.append("dados[codSroDest]", json.codSroDest)
-      params.append("dados[noEstacao]", json.codSroOrig)
-      params.append("dados[turno]", "1")
-      params.append("dados[plano]", direction)
-      params.append("dados[categoria]", json.categoria.toUpperCase())
-      params.append("dados[formato]", json.formato.toUpperCase())
-      params.append("dados[direcao]", direction)
-      params.append("dados[versao_plano]", "0")
-      params.append("dados[inTipoVolumoso]", "N")
-      params.append("dados[inTipoExpedicao]", "R")
-      params.append("dados[expGeolocation]", "N")
-      params.append("dados[descricaoMatrizDirecao]", "NAOINFORMADO")
+      params.append("acao", "estacao-gravar-unitizador");
+      params.append("dados[id]", "");
+      params.append("dados[idEstacao]", json.idEstacao);
+      params.append("dados[data]", json.dtHrgeracao);
+      params.append("dados[evento]", json.evento);
+      params.append("dados[unitizador]", json.id);
+      params.append("dados[peso]", "0");
+      params.append("dados[matricula]", this.user);
+      params.append("dados[celula]", json.celula);
+      params.append("dados[subCelula]", "1");
+      params.append("dados[posicao]", json.posicao);
+      params.append("dados[codSroOrig]", json.codSroOrig);
+      params.append("dados[codSroDest]", json.codSroDest);
+      params.append("dados[noEstacao]", json.codSroOrig);
+      params.append("dados[turno]", "1");
+      params.append("dados[plano]", direction);
+      params.append("dados[categoria]", json.categoria.toUpperCase());
+      params.append("dados[formato]", json.formato.toUpperCase());
+      params.append("dados[direcao]", direction);
+      params.append("dados[versao_plano]", "0");
+      params.append("dados[inTipoVolumoso]", "N");
+      params.append("dados[inTipoExpedicao]", "R");
+      params.append("dados[expGeolocation]", "N");
+      params.append("dados[descricaoMatrizDirecao]", "NAOINFORMADO");
 
-      const isOpen = await fetch("https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/controller.php", {
-        method: "POST",
-        headers: {
-          Cookie: this.session_cookie!,
+      const isOpen = await fetch(
+        "https://sroweb.correios.com.br/app/expedicao/expedicaoagencia/controller.php",
+        {
+          method: "POST",
+          headers: {
+            Cookie: this.session_cookie!,
+          },
+          body: params,
         },
-        body: params
-      });
+      );
 
-      const data = await isOpen.json()
-      return data
+      const data = await isOpen.json();
+      return data;
     } catch (e) {
       console.error(`Erro ao abrir unitizador: ${e.message}`);
     }
@@ -531,18 +554,18 @@ class PuppeteerService {
       );
 
       const oppened: {
-      oppeneds: {
-        message: string;
-        unitilizer: string;
-      }[];
-      error: { unitilizer: string; message: string }[];
-    } = {
-      oppeneds: [],
-      error: [],
-    };
+        oppeneds: {
+          message: string;
+          unitilizer: string;
+        }[];
+        error: { unitilizer: string; message: string }[];
+      } = {
+        oppeneds: [],
+        error: [],
+      };
 
       for (const item of itemsForDownload) {
-        console.log(item)
+        console.log(item);
         const labelsMatched = labelsData.filter(
           (label): label is FileJson =>
             label !== null && label.posicao?.toString() === item.toString(),
@@ -556,31 +579,72 @@ class PuppeteerService {
       if (unitizersFound.length > 0) {
         const avaliableUnits = await this.processDownloadPdf(unitizersFound);
 
-        if (avaliableUnits.length > 0) {
+        if (avaliableUnits && avaliableUnits.length > 0) {
           for (const unit of avaliableUnits) {
-            const message = await this.openUnitizador(unit.unitizador, unit.direction);
-            
+            const message = await this.openUnitizador(
+              unit.unitizador,
+              unit.direction,
+            );
+
             if (message.erro) {
-              oppened.error.push({ 
-                message: message.mensagem.split(':')[1], unitilizer: unit.unitizador 
-              })
+              oppened.error.push({
+                message: message.mensagem.split(":")[1],
+                unitilizer: unit.unitizador,
+              });
             } else {
               oppened.oppeneds.push({
                 message: `Unitizador "${message.unitizador}" aberto com sucesso para direção "${message.plano ?? message.direcao}"`,
-                unitilizer: unit.unitizador
+                unitilizer: unit.unitizador,
               });
             }
           }
+        } else {
+          oppened.error.push({unitilizer: 'NOT_AVALIABLE', message: 'Nenhum unitizador disponível.'})
         }
       }
 
-      return oppened; 
-      
+      return oppened;
     } catch (error) {
       console.error("[DOWNLOAD_ERROR]: Falha ao baixar unitilizadores:", error);
       throw error;
-    } finally {
-      await page.close();
+    }
+  }
+
+  async getObjectPending(initialDate: string) {
+    if (!this.isLogged) await this.connectAndLogin();
+
+    try {
+
+      const formData = new FormData()
+
+      formData.append('acao', 'obterObjetosPostados')
+      formData.append('dataInicial', initialDate)
+      formData.append('horaInicial', '00:00:00')
+      formData.append('horaFinal', '23:59:59')
+
+      const url = 'https://sroweb.correios.com.br/app/expedicao/expedicaolote/expedicaolotecontroller.php'
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Cookie: this.session_cookie
+        },
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.mensagem)
+      }
+
+      if (data.erro) {
+        throw new Error(data.mensagem)
+      }
+
+      return data?.retorno
+    } catch (error) {
+      console.error(`[GET_PENDING_ERROR]\n Falha ao buscar dados "${error}"`);
     }
   }
 }
