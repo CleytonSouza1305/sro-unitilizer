@@ -252,18 +252,18 @@ class PuppeteerService {
         );
 
         await page.goto(this.url, {
-          waitUntil: "networkidle2",
+          waitUntil: "load",
           timeout: 45000,
         });
         await page.goto(this.url, {
-          waitUntil: "networkidle2",
+          waitUntil: "load",
           timeout: 45000,
         });
         await page.waitForSelector("a.logo", { visible: true, timeout: 20000 });
 
         await Promise.all([
           page.click("a.logo"),
-          page.waitForNavigation({ waitUntil: "networkidle2", timeout: 45000 }),
+          page.waitForNavigation({ waitUntil: "load", timeout: 45000 }),
         ]);
 
         const ids = await page.evaluate(() => {
@@ -278,7 +278,7 @@ class PuppeteerService {
           await Promise.all([
             page.click("button.primario"),
             page
-              .waitForNavigation({ waitUntil: "networkidle2", timeout: 45000 })
+              .waitForNavigation({ waitUntil: "load", timeout: 45000 })
               .catch(() => {}),
           ]);
         }
@@ -429,7 +429,7 @@ class PuppeteerService {
     });
 
     try {
-      await page.goto(this.url, { waitUntil: "networkidle2" });
+      await page.goto(this.url, { waitUntil: "load" });
       await page.waitForSelector("#matricula", { visible: true });
 
       await page.type("#matricula", unitilizer);
@@ -479,7 +479,7 @@ class PuppeteerService {
     });
 
     try {
-      await page.goto(this.url, { waitUntil: "networkidle2" });
+      await page.goto(this.url, { waitUntil: "load" });
       await page.waitForSelector("#matricula", { visible: true });
 
       await page.waitForSelector("#btn-rotulos", { visible: true });
@@ -539,7 +539,7 @@ class PuppeteerService {
     const unitizersFound: FileJson[] = [];
 
     try {
-      await page.goto(this.url, { waitUntil: "networkidle2" });
+      await page.goto(this.url, { waitUntil: "load" });
       await page.waitForSelector("#btn-rotulos", { visible: true });
       await page.click("#btn-rotulos");
 
