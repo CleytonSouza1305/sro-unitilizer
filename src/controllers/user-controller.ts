@@ -1,9 +1,10 @@
 import { Handler } from "express"
 import { UserRequestLoginSchema, UserRequestSchema } from "../schemas/UserRequest.js"
-import User from "../model/User"
+import User, { UserFilter } from "../model/User"
 import { HttpError } from "../error/HttpError.js"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
+import { UserRole } from "@prisma/client"
 
 const registerController: Handler = async (req, res, next) => {
   try {
@@ -73,4 +74,58 @@ const me: Handler = async (req, res, next) => {
   }
 }
 
-export { registerController, loginController, me }
+const usersReq: Handler = async (req, res, next) => {
+  try {
+
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "created_at",
+      username,
+      role,
+      order = "asc",
+    } = req.query
+
+     const pageSize = Number(page) - 1;
+    const limitSize = Number(limit)
+
+    const filter: UserFilter = {
+      page: pageSize,
+      limit: limitSize,
+      where: {},
+      order: order === "desc" ? "desc" : "asc",
+      sortBy: String(sortBy)
+    }
+
+    if (username) {
+      filter.where.username = {
+        contains: String(username),
+        mode: "insensitive"
+      }
+    }
+    
+
+
+    if (role) {
+      String(role).toLowerCase()
+      if (role !== "user" && role !== "delivery" && role !== "admin") {
+        throw new HttpError('INVALID_FIELD', 400, 'Invalid role format field');
+      }
+      filter.where.role = {
+        equals: String(role) as UserRole ,
+        mode: "insensitive"
+      }
+    }
+
+    filter.page = pageSize;
+    filter.limit = limitSize;
+    filter.sortBy = String(sortBy)
+
+    const user = await User.allUsers(filter)
+    res.json(user)
+  } catch (e) {
+    next(e)
+  }
+}
+
+export { registerController, loginController, me, usersReq }

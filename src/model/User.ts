@@ -7,6 +7,20 @@ export interface UserInterface {
   password: string;
   role?: UserRole;
 }
+
+export interface UserFilter {
+  page: number, 
+  limit: number, 
+  select?: {}, 
+  sortBy?: string,
+  order: "asc" | "desc", 
+  where: {
+    username?: { contains?: string, mode: "insensitive" | "default" },
+    role?: { equals?: UserRole, mode: "insensitive" | "default" }
+  }
+}
+
+
 export default class User {
   static getByEmail = async (email: string) => {
     return await prisma.user.findUnique({
@@ -28,4 +42,21 @@ export default class User {
       },
     });
   };
+
+  static allUsers = async (filter: UserFilter) => {
+    const users = await prisma.user.findMany({
+      skip: filter.page,
+      take: filter.limit,
+      select: {
+        email: true,
+        role: true,
+        username: true,
+        created_at: true,
+        id: true
+      },
+      orderBy: { [filter.sortBy]: filter.order },
+      where: filter.where
+    })
+    return users
+  }
 }

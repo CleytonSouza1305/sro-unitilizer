@@ -31,7 +31,7 @@ export const authorizationPermission: Handler = (req, res, next) => {
       );
     }
 
-    if (req.user.role === "USER") {
+    if (req.user.role !== "OWNER" && req.user.role !== "ADMIN") {
       throw new HttpError(
         "INSUFFICIENT_PERMISSIONS",
         403,

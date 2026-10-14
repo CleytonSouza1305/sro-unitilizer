@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginController, me, registerController } from "../controllers/user-controller.js";
+import { loginController, me, registerController, usersReq } from "../controllers/user-controller.js";
 import { authorizationByToken, authorizationPermission } from "../middleware/authorization-middleware.js";
 
 const authRouter = Router()
@@ -19,4 +19,11 @@ authRouter.get(
   authorizationByToken,
   me
 )
+
+authRouter.get(
+  '/users', 
+  authorizationByToken,      
+  authorizationPermission,   
+  usersReq     
+);
 export default authRouter

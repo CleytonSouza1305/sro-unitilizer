@@ -60,7 +60,7 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
         continue;
       }
 
-      const direction = isValidUnitilizer.direcao ?? isValidUnitilizer.plano
+      const direction = isValidUnitilizer.direcao ?? isValidUnitilizer.plano;
       if (direction.toLowerCase().includes("cajamar")) {
         results.error.push({
           unitilizer: isValidUnitilizer.unitizador,
@@ -73,10 +73,13 @@ const closeUnitilizer: RequestHandler = async (req, res, next) => {
         isValidUnitilizer.unitizador,
       );
 
-      const unitizer = wasClosed.unitilizer.toUpperCase();
+      const unitizer = wasClosed?.unitilizer?.toUpperCase();
 
       if (wasClosed?.success) {
-        const saveOnDb = await Unitilizer.closeUnit(isValidUnitilizer, req.user.id)
+        const saveOnDb = await Unitilizer.closeUnit(
+          isValidUnitilizer,
+          req.user.id,
+        );
 
         results.closeds.push({
           message: `Unitizador "${unitizer}" fechado com sucesso por "${saveOnDb.user.name}"`,
@@ -154,10 +157,45 @@ const dowloadUnitReq: RequestHandler = async (req, res, next) => {
   }
 };
 
+const getPendingReq: RequestHandler = async (req, res, next) => {
+  try {
+    const { initialDate } = req.query;
+
+    const isValidDate =
+      typeof initialDate === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(initialDate);
+
+    const date = isValidDate
+      ? initialDate
+      : new Date().toLocaleDateString("sv-SE");
+
+    const data = await puppeteerService.getObjectPending(date);
+
+    const itens = data.reduce(
+      (acc, item) => {
+        if (item.servico === "SEDEX") {
+          acc.sedex.push(item);
+        } else if (item.servico === "PAC") {
+          acc.pac.push(item);
+        } else {
+          acc.todos.push(item);
+        }
+
+        return acc;
+      },
+      { sedex: [], pac: [], todos: [] },
+    );
+    res.json(itens);
+  } catch (e) {
+    next(e);
+  }
+};
+
 export {
   getUnitilizer,
   closeUnitilizer,
   allObjects,
   getAvaliableUnit,
   dowloadUnitReq,
+  getPendingReq,
 };
